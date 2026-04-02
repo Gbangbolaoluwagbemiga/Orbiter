@@ -14,12 +14,12 @@ import {
   LogIn,
 } from "lucide-react";
 import { useAccount, useReadContract, useBalance } from "wagmi";
-import { formatUnits, formatEther } from 'viem';
+import { formatUnits, formatEther } from "viem";
 import { usePayeerContract } from "@/hooks/usePayeerContract";
 import { QRCodeSVG } from "qrcode.react";
-import { BadgeDisplay } from '@/components/BadgeDisplay';
-import { supabase } from '@/utils/supabase';
-import { Send, Smile } from 'lucide-react';
+import { BadgeDisplay } from "@/components/BadgeDisplay";
+import { supabase } from "@/utils/supabase";
+import { Send, Smile } from "lucide-react";
 
 export default function HomeContent() {
   const [winner, setWinner] = useState<string | null>(null);
@@ -27,10 +27,12 @@ export default function HomeContent() {
   const [merchant, setMerchant] = useState("");
   const [isCreatingLobby, setIsCreatingLobby] = useState(false);
   const [isVisualSpinning, setIsVisualSpinning] = useState(false);
-  
+
   // Custom Names state (Stored locally and pulled from URL for the host)
   const [playerName, setPlayerName] = useState("");
-  const [playerNamesMap, setPlayerNamesMap] = useState<Record<string, string>>({});
+  const [playerNamesMap, setPlayerNamesMap] = useState<Record<string, string>>(
+    {},
+  );
   const [lobbyName, setLobbyName] = useState("Lobby");
   const [isEditingLobbyName, setIsEditingLobbyName] = useState(false);
 
@@ -66,16 +68,20 @@ export default function HomeContent() {
     joinSessionPending,
     lockAndSelectPayerPending,
     completePayment,
-    completePaymentPending
+    completePaymentPending,
   } = usePayeerContract();
 
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
   const [sessionUrl, setSessionUrl] = useState<string>("");
 
   // Real-time Chat & Reactions
-  const [messages, setMessages] = useState<{user: string, text: string}[]>([]);
+  const [messages, setMessages] = useState<{ user: string; text: string }[]>(
+    [],
+  );
   const [newMessage, setNewMessage] = useState("");
-  const [recentReactions, setRecentReactions] = useState<{emoji: string, id: number}[]>([]);
+  const [recentReactions, setRecentReactions] = useState<
+    { emoji: string; id: number }[]
+  >([]);
 
   // Real participants from the contract
   const { data: onChainParticipants, refetch: refetchParticipants } =
@@ -105,15 +111,15 @@ export default function HomeContent() {
   // Extract session details
   const participantsList = (onChainParticipants as string[]) || [];
   const sessionCompleted = sessionDetails ? (sessionDetails as any)[3] : false; // Corrected index for 'completed'
-  const sessionIsLocked = sessionDetails ? (sessionDetails as any)[4] : false;  // Corrected index for 'isLocked'
+  const sessionIsLocked = sessionDetails ? (sessionDetails as any)[4] : false; // Corrected index for 'isLocked'
   const sessionWinner =
     sessionDetails &&
     (sessionDetails as any)[2] !== "0x0000000000000000000000000000000000000000"
       ? ((sessionDetails as any)[2] as string)
       : null;
 
-  console.log('Current Session Details:', sessionDetails);
-  console.log('sessionIsLocked:', sessionIsLocked);
+  console.log("Current Session Details:", sessionDetails);
+  console.log("sessionIsLocked:", sessionIsLocked);
 
   const isHost =
     participantsList.length > 0 &&
@@ -139,11 +145,11 @@ export default function HomeContent() {
     const fetchLobbyState = async () => {
       // Fetch lobby metadata
       const { data: lobbyData } = await supabase
-        .from('lobbies')
-        .select('*')
-        .eq('id', activeSessionId)
+        .from("lobbies")
+        .select("*")
+        .eq("id", activeSessionId)
         .single();
-      
+
       if (lobbyData) {
         if (lobbyData.name) setLobbyName(lobbyData.name);
         if (lobbyData.player_names) setPlayerNamesMap(lobbyData.player_names);
@@ -151,54 +157,73 @@ export default function HomeContent() {
 
       // Fetch message history
       const { data: messageData } = await supabase
-        .from('messages')
-        .select('user_name, message_text')
-        .eq('session_id', activeSessionId)
-        .order('sent_at', { ascending: true })
+        .from("messages")
+        .select("user_name, message_text")
+        .eq("session_id", activeSessionId)
+        .order("sent_at", { ascending: true })
         .limit(20);
-      
+
       if (messageData) {
-        setMessages(messageData.map(m => ({ user: m.user_name, text: m.message_text })));
+        setMessages(
+          messageData.map((m) => ({ user: m.user_name, text: m.message_text })),
+        );
       }
     };
     fetchLobbyState();
 
     // 2. Subscribe to BOTH Broadcast (fast) and DB changes (persistent)
     const channel = supabase.channel(`lobby-${activeSessionId}`, {
-      config: { broadcast: { self: true } }
+      config: { broadcast: { self: true } },
     });
 
     channel
-      .on('broadcast', { event: 'reaction' }, (payload) => {
+      .on("broadcast", { event: "reaction" }, (payload) => {
         const id = Date.now();
-        setRecentReactions(prev => [...prev, { emoji: payload.payload.emoji, id }]);
+        setRecentReactions((prev) => [
+          ...prev,
+          { emoji: payload.payload.emoji, id },
+        ]);
         setTimeout(() => {
-          setRecentReactions(prev => prev.filter(r => r.id !== id));
+          setRecentReactions((prev) => prev.filter((r) => r.id !== id));
         }, 2000);
       })
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'messages',
-        filter: `session_id=eq.${activeSessionId}` 
-      }, (payload) => {
-        setMessages(prev => [...prev, { user: payload.new.user_name, text: payload.new.message_text }].slice(-20));
-      })
-      .on('postgres_changes', { 
-        event: 'UPDATE', 
-        schema: 'public', 
-        table: 'lobbies',
-        filter: `id=eq.${activeSessionId}` 
-      }, (payload) => {
-        console.log('DB Update received:', payload.new);
-        if (payload.new.name) setLobbyName(payload.new.name);
-        if (payload.new.player_names) setPlayerNamesMap(payload.new.player_names);
-      })
-      .on('broadcast', { event: 'name_sync' }, (payload) => {
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `session_id=eq.${activeSessionId}`,
+        },
+        (payload) => {
+          setMessages((prev) =>
+            [
+              ...prev,
+              { user: payload.new.user_name, text: payload.new.message_text },
+            ].slice(-20),
+          );
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "lobbies",
+          filter: `id=eq.${activeSessionId}`,
+        },
+        (payload) => {
+          console.log("DB Update received:", payload.new);
+          if (payload.new.name) setLobbyName(payload.new.name);
+          if (payload.new.player_names)
+            setPlayerNamesMap(payload.new.player_names);
+        },
+      )
+      .on("broadcast", { event: "name_sync" }, (payload) => {
         // Still use broadcast for immediate UI feel
-        setPlayerNamesMap(prev => ({ ...prev, ...payload.payload }));
+        setPlayerNamesMap((prev) => ({ ...prev, ...payload.payload }));
       })
-      .on('broadcast', { event: 'lobby_sync' }, (payload) => {
+      .on("broadcast", { event: "lobby_sync" }, (payload) => {
         setLobbyName(payload.payload.name);
       })
       .subscribe();
@@ -214,54 +239,59 @@ export default function HomeContent() {
       const syncToDB = async () => {
         // First get current state to avoid overwriting others' names
         const { data } = await supabase
-          .from('lobbies')
-          .select('player_names')
-          .eq('id', activeSessionId)
+          .from("lobbies")
+          .select("player_names")
+          .eq("id", activeSessionId)
           .single();
-        
+
         const existingNames = data?.player_names || {};
         const mergedNames = { ...existingNames, ...playerNamesMap };
 
-        await supabase
-          .from('lobbies')
-          .upsert({ 
-            id: activeSessionId, 
-            name: lobbyName, 
-            player_names: mergedNames,
-            host_address: address 
-          });
+        await supabase.from("lobbies").upsert({
+          id: activeSessionId,
+          name: lobbyName,
+          player_names: mergedNames,
+          host_address: address,
+        });
       };
       syncToDB();
     }
-  }, [lobbyName, playerNamesMap, activeSessionId, isHost, address, isConnected]);
+  }, [
+    lobbyName,
+    playerNamesMap,
+    activeSessionId,
+    isHost,
+    address,
+    isConnected,
+  ]);
 
   // Sync names to others when mine changes
   useEffect(() => {
     if (activeSessionId !== null && address && playerName) {
       const myName = { [address.toLowerCase()]: playerName };
-      
+
       // Broadcast for immediate feedback
       supabase.channel(`lobby-${activeSessionId}`).send({
-        type: 'broadcast',
-        event: 'name_sync',
-        payload: myName
+        type: "broadcast",
+        event: "name_sync",
+        payload: myName,
       });
-      
+
       // Update DB
       const updateMyNameInDB = async () => {
         // Use a RPC or a careful update to merge jsonb
         const { data } = await supabase
-          .from('lobbies')
-          .select('player_names')
-          .eq('id', activeSessionId)
+          .from("lobbies")
+          .select("player_names")
+          .eq("id", activeSessionId)
           .single();
-        
+
         const currentNames = data?.player_names || {};
         if (currentNames[address.toLowerCase()] !== playerName) {
           await supabase
-            .from('lobbies')
+            .from("lobbies")
             .update({ player_names: { ...currentNames, ...myName } })
-            .eq('id', activeSessionId);
+            .eq("id", activeSessionId);
         }
       };
       updateMyNameInDB();
@@ -270,12 +300,12 @@ export default function HomeContent() {
 
   const sendChatMessage = async () => {
     if (!newMessage.trim() || activeSessionId === null) return;
-    const name = playerName || (address ? `${address.slice(0,6)}...` : "Anon");
-    
-    await supabase.from('messages').insert({
+    const name = playerName || (address ? `${address.slice(0, 6)}...` : "Anon");
+
+    await supabase.from("messages").insert({
       session_id: activeSessionId,
       user_name: name,
-      message_text: newMessage
+      message_text: newMessage,
     });
 
     setNewMessage("");
@@ -284,9 +314,9 @@ export default function HomeContent() {
   const sendReaction = (emoji: string) => {
     if (activeSessionId === null) return;
     supabase.channel(`lobby-${activeSessionId}`).send({
-      type: 'broadcast',
-      event: 'reaction',
-      payload: { emoji }
+      type: "broadcast",
+      event: "reaction",
+      payload: { emoji },
     });
   };
 
@@ -300,26 +330,27 @@ export default function HomeContent() {
         const id = Number(joinId);
         console.log("JOIN LOBBY DETECTED:", id);
         setActiveSessionId(id);
-        
-        const namesParam = urlParams.get('names');
+
+        const namesParam = urlParams.get("names");
         if (namesParam) {
           try {
             const decodedNames = JSON.parse(decodeURIComponent(namesParam));
-            setPlayerNamesMap(prev => ({...prev, ...decodedNames}));
+            setPlayerNamesMap((prev) => ({ ...prev, ...decodedNames }));
           } catch (e) {
             console.error("Failed to parse names");
           }
         }
 
-        const lname = urlParams.get('lname');
+        const lname = urlParams.get("lname");
         if (lname) {
           setLobbyName(decodeURIComponent(lname));
         }
 
-        const cleanUrl = window.location.origin + window.location.pathname + "?join=" + joinId;
+        const cleanUrl =
+          window.location.origin + window.location.pathname + "?join=" + joinId;
         setSessionUrl(cleanUrl);
         // Update browser URL without reload
-        window.history.pushState({}, '', cleanUrl);
+        window.history.pushState({}, "", cleanUrl);
       }
     }
   }, [isConnected]); // Run when connection status changes or component mounts
@@ -329,9 +360,9 @@ export default function HomeContent() {
     if (activeSessionId !== null && isHost) {
       // Host broadcasts lobby name changes
       supabase.channel(`lobby-${activeSessionId}`).send({
-        type: 'broadcast',
-        event: 'lobby_sync',
-        payload: { name: lobbyName }
+        type: "broadcast",
+        event: "lobby_sync",
+        payload: { name: lobbyName },
       });
     }
   }, [lobbyName, activeSessionId, isHost]);
@@ -348,19 +379,29 @@ export default function HomeContent() {
 
       const newSessionId = sessionCount ? Number(sessionCount) : 0;
       setActiveSessionId(newSessionId);
-      
+
       if (playerName && address) {
-        setPlayerNamesMap(prev => ({...prev, [address.toLowerCase()]: playerName}));
+        setPlayerNamesMap((prev) => ({
+          ...prev,
+          [address.toLowerCase()]: playerName,
+        }));
       }
 
       if (typeof window !== "undefined") {
         const url = new URL(window.location.origin + window.location.pathname);
         url.searchParams.set("join", newSessionId.toString());
-        if (playerName) url.searchParams.set("names", encodeURIComponent(JSON.stringify({[address!.toLowerCase()]: playerName})));
-        if (lobbyName !== "Lobby") url.searchParams.set("lname", encodeURIComponent(lobbyName));
+        if (playerName)
+          url.searchParams.set(
+            "names",
+            encodeURIComponent(
+              JSON.stringify({ [address!.toLowerCase()]: playerName }),
+            ),
+          );
+        if (lobbyName !== "Lobby")
+          url.searchParams.set("lname", encodeURIComponent(lobbyName));
         setSessionUrl(url.toString());
         // Update browser URL without reload
-        window.history.pushState({}, '', url.toString());
+        window.history.pushState({}, "", url.toString());
       }
     } catch (error) {
       console.error("Failed to create lobby:", error);
@@ -396,13 +437,13 @@ export default function HomeContent() {
       console.log("Join session transaction sent. TX Hash:", tx);
 
       if (playerName && address) {
-        const myName = {[address.toLowerCase()]: playerName};
-        setPlayerNamesMap(prev => ({...prev, ...myName}));
+        const myName = { [address.toLowerCase()]: playerName };
+        setPlayerNamesMap((prev) => ({ ...prev, ...myName }));
         // Broadcast name to everyone in lobby
         supabase.channel(`lobby-${activeSessionId}`).send({
-          type: 'broadcast',
-          event: 'name_sync',
-          payload: myName
+          type: "broadcast",
+          event: "name_sync",
+          payload: myName,
         });
       }
 
@@ -419,24 +460,30 @@ export default function HomeContent() {
 
   const handleSpin = async () => {
     if (activeSessionId === null || isVisualSpinning) return;
-    
+
     console.log("SPIN THE WHEEL CLICKED. Active Session:", activeSessionId);
-    console.log("Current lockAndSelectPayerPending status:", lockAndSelectPayerPending);
+    console.log(
+      "Current lockAndSelectPayerPending status:",
+      lockAndSelectPayerPending,
+    );
 
     setIsVisualSpinning(true); // Start visual spin
 
     try {
-      console.log("Triggering lockAndSelectPayer for session:", activeSessionId);
+      console.log(
+        "Triggering lockAndSelectPayer for session:",
+        activeSessionId,
+      );
       const tx = await lockAndSelectPayer(activeSessionId);
       console.log("lockAndSelectPayer transaction sent:", tx);
-      
+
       // Wait for it to mine
-      await new Promise(resolve => setTimeout(resolve, 4000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+
       console.log("Refetching session details...");
       refetchSessionDetails();
     } catch (error) {
-      console.error('Failed to select payer. Error details:', error);
+      console.error("Failed to select payer. Error details:", error);
     } finally {
       setIsVisualSpinning(false); // Ensure visual spin stops
     }
@@ -450,7 +497,10 @@ export default function HomeContent() {
   return (
     <main className="flex-1 flex flex-col items-center p-8 max-w-4xl mx-auto w-full">
       <header className="w-full flex justify-between items-center mb-12">
-        <a href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
+        <a
+          href="/"
+          className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
+        >
           <div className="w-12 h-12 bg-linear-to-tr from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-[0_4px_10px_rgba(251,191,36,0.4)] rotate-3">
             <span className="text-2xl drop-shadow-md">💸</span>
           </div>
@@ -462,11 +512,14 @@ export default function HomeContent() {
           </h1>
         </a>
         <div className="flex items-center gap-4">
-          <a href="/analytics" className="hidden sm:block text-sm font-bold text-gray-500 hover:text-purple-600 transition-colors">
+          <a
+            href="/analytics"
+            className="hidden sm:block text-sm font-bold text-gray-500 hover:text-purple-600 transition-colors"
+          >
             Leaderboard
           </a>
-          <ConnectButton 
-            showBalance={false} 
+          <ConnectButton
+            showBalance={false}
             accountStatus="address"
             chainStatus="icon"
           />
@@ -543,17 +596,17 @@ export default function HomeContent() {
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-purple-200 ring-2 ring-purple-50">
               <div className="flex justify-between items-center mb-6">
                 {isEditingLobbyName && isHost ? (
-                  <input 
-                    type="text" 
-                    value={lobbyName} 
+                  <input
+                    type="text"
+                    value={lobbyName}
                     onChange={(e) => setLobbyName(e.target.value)}
                     onBlur={() => setIsEditingLobbyName(false)}
                     autoFocus
                     className="bg-purple-50 text-xl text-purple-900 font-bold border-b-2 border-purple-500 outline-none w-48"
                   />
                 ) : (
-                  <h2 
-                    className={`text-xl font-bold flex items-center gap-2 text-purple-900 ${isHost ? 'cursor-pointer hover:opacity-80' : ''}`}
+                  <h2
+                    className={`text-xl font-bold flex items-center gap-2 text-purple-900 ${isHost ? "cursor-pointer hover:opacity-80" : ""}`}
                     onClick={() => {
                       if (isHost) setIsEditingLobbyName(true);
                     }}
@@ -620,22 +673,29 @@ export default function HomeContent() {
                   <div className="h-32 overflow-y-auto mb-2 space-y-1 text-xs">
                     {messages.map((m, i) => (
                       <div key={i} className="wrap-break-word">
-                        <span className="font-bold text-purple-600">{m.user}: </span>
+                        <span className="font-bold text-purple-600">
+                          {m.user}:{" "}
+                        </span>
                         <span className="text-gray-700">{m.text}</span>
                       </div>
                     ))}
-                    {messages.length === 0 && <p className="text-gray-400 italic">No messages yet...</p>}
+                    {messages.length === 0 && (
+                      <p className="text-gray-400 italic">No messages yet...</p>
+                    )}
                   </div>
                   <div className="flex gap-2">
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="Trash talk..."
                       className="flex-1 bg-white border border-gray-200 rounded-lg px-2 py-1 text-sm text-black outline-none font-medium"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()}
+                      onKeyDown={(e) => e.key === "Enter" && sendChatMessage()}
                     />
-                    <button onClick={sendChatMessage} className="p-1 bg-purple-600 text-white rounded-lg">
+                    <button
+                      onClick={sendChatMessage}
+                      className="p-1 bg-purple-600 text-white rounded-lg"
+                    >
                       <Send size={16} />
                     </button>
                   </div>
@@ -651,7 +711,8 @@ export default function HomeContent() {
                         {i + 1}
                       </div>
                       <span className="font-mono text-sm text-gray-700">
-                        {playerNamesMap[p.toLowerCase()] || `${p.slice(0, 6)}...${p.slice(-4)}`}
+                        {playerNamesMap[p.toLowerCase()] ||
+                          `${p.slice(0, 6)}...${p.slice(-4)}`}
                         {p.toLowerCase() === address?.toLowerCase() && (
                           <span className="ml-2 text-blue-600 text-xs font-bold">
                             (You)
@@ -677,45 +738,60 @@ export default function HomeContent() {
 
           {/* Add Badge Display for the connected user */}
           <BadgeDisplay address={address} />
-
         </section>
 
         {/* Right Column: The Spinner */}
         <section className="flex flex-col items-center justify-center space-y-8 relative">
           {/* Reaction Overlay */}
           <div className="absolute inset-0 pointer-events-none z-50">
-            {recentReactions.map(r => (
-              <div key={r.id} className="absolute left-1/2 top-1/2 animate-bounce-up text-4xl">
+            {recentReactions.map((r) => (
+              <div
+                key={r.id}
+                className="absolute left-1/2 top-1/2 animate-bounce-up text-4xl"
+              >
                 {r.emoji}
               </div>
             ))}
           </div>
 
           <Spinner
-            participants={participantsList.map(p => playerNamesMap[p.toLowerCase()] || `${p.slice(0, 6)}...`)}
+            participants={participantsList.map(
+              (p) => playerNamesMap[p.toLowerCase()] || `${p.slice(0, 6)}...`,
+            )}
             onFinish={() => setIsVisualSpinning(false)}
             isSpinning={isVisualSpinning}
           />
 
           {/* Show spin button if Host and session not locked/completed */}
-          {isHost && activeSessionId !== null && !sessionIsLocked && !sessionCompleted && (
-            <button
-              onClick={handleSpin}
-              disabled={
-                participantsList.length < 2 || lockAndSelectPayerPending || isVisualSpinning
-              }
-              className="px-10 py-4 bg-red-600 text-white rounded-full font-black text-xl hover:bg-red-700 disabled:bg-gray-400 transition-all shadow-[0_0_20px_rgba(220,38,38,0.5)] hover:shadow-[0_0_30px_rgba(220,38,38,0.8)] disabled:shadow-none hover:scale-105"
-            >
-              {lockAndSelectPayerPending || isVisualSpinning ? 'SPINNING...' : 'SPIN THE WHEEL!'}
-            </button>
-          )}
+          {isHost &&
+            activeSessionId !== null &&
+            !sessionIsLocked &&
+            !sessionCompleted && (
+              <button
+                onClick={handleSpin}
+                disabled={
+                  participantsList.length < 2 ||
+                  lockAndSelectPayerPending ||
+                  isVisualSpinning
+                }
+                className="px-10 py-4 bg-red-600 text-white rounded-full font-black text-xl hover:bg-red-700 disabled:bg-gray-400 transition-all shadow-[0_0_20px_rgba(220,38,38,0.5)] hover:shadow-[0_0_30px_rgba(220,38,38,0.8)] disabled:shadow-none hover:scale-105"
+              >
+                {lockAndSelectPayerPending || isVisualSpinning
+                  ? "SPINNING..."
+                  : "SPIN THE WHEEL!"}
+              </button>
+            )}
 
           {/* Show waiting message if not host and session not locked/completed */}
-          {!isHost && activeSessionId !== null && !sessionIsLocked && !sessionCompleted && participantsList.length >= 2 && (
-            <p className="text-gray-500 font-medium animate-pulse">
-              Waiting for host to spin...
-            </p>
-          )}
+          {!isHost &&
+            activeSessionId !== null &&
+            !sessionIsLocked &&
+            !sessionCompleted &&
+            participantsList.length >= 2 && (
+              <p className="text-gray-500 font-medium animate-pulse">
+                Waiting for host to spin...
+              </p>
+            )}
 
           {/* Show results if winner is selected or session is completed */}
           {(winner || sessionCompleted) && activeSessionId !== null && (
@@ -740,12 +816,17 @@ export default function HomeContent() {
                         onClick={async () => {
                           if (!sessionDetails) return;
                           try {
-                            const amountInCelo = formatEther((sessionDetails as any)[0]);
-                            const tx = await completePayment(activeSessionId, amountInCelo);
-                            console.log('Payment sent! Hash:', tx);
+                            const amountInCelo = formatEther(
+                              (sessionDetails as any)[0],
+                            );
+                            const tx = await completePayment(
+                              activeSessionId,
+                              amountInCelo,
+                            );
+                            console.log("Payment sent! Hash:", tx);
                             setTimeout(() => refetchSessionDetails(), 5000);
                           } catch (e) {
-                            console.error('Failed to pay:', e);
+                            console.error("Failed to pay:", e);
                           }
                         }}
                         disabled={completePaymentPending}
@@ -770,14 +851,15 @@ export default function HomeContent() {
                   </h3>
                   <p className="text-green-700 font-medium">
                     <span className="font-mono bg-white px-2 py-1 rounded">
-                      {playerNamesMap[winner!.toLowerCase()] || `${winner!.slice(0, 6)}...${winner!.slice(-4)}`}
+                      {playerNamesMap[winner!.toLowerCase()] ||
+                        `${winner!.slice(0, 6)}...${winner!.slice(-4)}`}
                     </span>{" "}
                     is paying the bill!
                   </p>
                   <div className="mt-4 flex gap-2 justify-center">
-                    {['💀', '🤡', '😂', '🔥', '💸'].map(emoji => (
-                      <button 
-                        key={emoji} 
+                    {["💀", "🤡", "😂", "🔥", "💸"].map((emoji) => (
+                      <button
+                        key={emoji}
                         onClick={() => sendReaction(emoji)}
                         className="text-2xl hover:scale-125 transition-transform"
                       >
