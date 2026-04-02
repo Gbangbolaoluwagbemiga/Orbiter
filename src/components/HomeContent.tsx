@@ -693,21 +693,40 @@ export default function HomeContent() {
 
           <Spinner
             participants={participantsList.map(p => playerNamesMap[p.toLowerCase()] || `${p.slice(0, 6)}...`)}
-            onFinish={() => {
-              setIsVisualSpinning(false); // Reset visual spin state
-            }}
+            onFinish={() => setIsVisualSpinning(false)}
             isSpinning={isVisualSpinning}
           />
 
-          {winner && activeSessionId !== null && (
+          {/* Show spin button if Host and session not locked/completed */}
+          {isHost && activeSessionId !== null && !sessionIsLocked && !sessionCompleted && (
+            <button
+              onClick={handleSpin}
+              disabled={
+                participantsList.length < 2 || lockAndSelectPayerPending || isVisualSpinning
+              }
+              className="px-10 py-4 bg-red-600 text-white rounded-full font-black text-xl hover:bg-red-700 disabled:bg-gray-400 transition-all shadow-[0_0_20px_rgba(220,38,38,0.5)] hover:shadow-[0_0_30px_rgba(220,38,38,0.8)] disabled:shadow-none hover:scale-105"
+            >
+              {lockAndSelectPayerPending || isVisualSpinning ? 'SPINNING...' : 'SPIN THE WHEEL!'}
+            </button>
+          )}
+
+          {/* Show waiting message if not host and session not locked/completed */}
+          {!isHost && activeSessionId !== null && !sessionIsLocked && !sessionCompleted && participantsList.length >= 2 && (
+            <p className="text-gray-500 font-medium animate-pulse">
+              Waiting for host to spin...
+            </p>
+          )}
+
+          {/* Show results if winner is selected or session is completed */}
+          {(winner || sessionCompleted) && activeSessionId !== null && (
             <div
               className={`text-center p-8 border-2 rounded-2xl shadow-xl w-full max-w-sm ${
-                winner.toLowerCase() === address?.toLowerCase()
+                winner?.toLowerCase() === address?.toLowerCase()
                   ? "bg-red-50 border-red-200 animate-bounce"
                   : "bg-green-50 border-green-200"
               }`}
             >
-              {winner.toLowerCase() === address?.toLowerCase() ? (
+              {winner?.toLowerCase() === address?.toLowerCase() ? (
                 <>
                   <h3 className="text-red-800 font-black text-3xl mb-2">
                     HEY CHOSEN! 🎯
@@ -751,7 +770,7 @@ export default function HomeContent() {
                   </h3>
                   <p className="text-green-700 font-medium">
                     <span className="font-mono bg-white px-2 py-1 rounded">
-                      {playerNamesMap[winner.toLowerCase()] || `${winner.slice(0, 6)}...${winner.slice(-4)}`}
+                      {playerNamesMap[winner!.toLowerCase()] || `${winner!.slice(0, 6)}...${winner!.slice(-4)}`}
                     </span>{" "}
                     is paying the bill!
                   </p>
