@@ -24,3 +24,13 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes bounce-up {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(-50%, -200%) scale(1.5); opacity: 0; }
+}
+
+.animate-bounce-up {
+  animation: bounce-up 2s ease-out forwards;
+}

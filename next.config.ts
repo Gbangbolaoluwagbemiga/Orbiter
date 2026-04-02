@@ -1,8 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   reactCompiler: true,
+  // Disable static generation entirely
+  output: "standalone",
+  trailingSlash: true,
+  // Force dynamic rendering
+  serverExternalPackages: [],
+  // Disable static optimization
+  images: {
+    unoptimized: true,
+  },
 };
 
 export default nextConfig;
