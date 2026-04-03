@@ -383,11 +383,11 @@ export default function HomeContent() {
       if (playerName && address) {
         // Immediately update local map and broadcast host's initial name
         const hostName = { [address.toLowerCase()]: playerName };
-        setPlayerNamesMap(prev => ({...prev, ...hostName}));
+        setPlayerNamesMap((prev) => ({ ...prev, ...hostName }));
         supabase.channel(`lobby-${newSessionId}`).send({
-          type: 'broadcast',
-          event: 'name_sync',
-          payload: hostName
+          type: "broadcast",
+          event: "name_sync",
+          payload: hostName,
         });
       }
 
@@ -553,7 +553,10 @@ export default function HomeContent() {
                     onChange={(e) => {
                       setPlayerName(e.target.value);
                       if (address) {
-                        setPlayerNamesMap(prev => ({ ...prev, [address.toLowerCase()]: e.target.value }));
+                        setPlayerNamesMap((prev) => ({
+                          ...prev,
+                          [address.toLowerCase()]: e.target.value,
+                        }));
                       }
                     }}
                   />
@@ -814,12 +817,14 @@ export default function HomeContent() {
               {winner?.toLowerCase() === address?.toLowerCase() ? (
                 <>
                   <h3 className="text-red-800 font-black text-3xl mb-2">
-                    HEY CHOSEN! 🎯
+                    {sessionCompleted ? "TAB SETTLED! ✅" : "HEY CHOSEN! 🎯"}
                   </h3>
                   <p className="text-red-700 font-medium mb-6">
-                    You won the privilege to pay the bill!
+                    {sessionCompleted 
+                      ? "The bill has been paid and your badge has been updated!" 
+                      : "You won the privilege to pay the bill!"}
                   </p>
-                  {isConnected && (
+                  {isConnected && !sessionCompleted && (
                     <div className="space-y-3">
                       <button
                         onClick={async () => {
@@ -852,17 +857,25 @@ export default function HomeContent() {
                       </button>
                     </div>
                   )}
+                  {sessionCompleted && (
+                    <div className="mt-4 p-4 bg-green-100 text-green-800 rounded-xl font-bold border border-green-200">
+                       Transaction Confirmed! 🚀
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
                   <h3 className="text-green-800 font-black text-2xl mb-2">
-                    YOU SURVIVED! 🎉
+                    {sessionCompleted ? "TAB SETTLED! 🥂" : "YOU SURVIVED! 🎉"}
                   </h3>
                   <p className="text-green-700 font-medium">
                     <span className="font-mono bg-white px-2 py-1 rounded">
-                      {winner ? (playerNamesMap[winner.toLowerCase()] || `${winner.slice(0, 6)}...${winner.slice(-4)}`) : 'Unknown Payer'}
+                      {winner
+                        ? playerNamesMap[winner.toLowerCase()] ||
+                          `${winner.slice(0, 6)}...${winner.slice(-4)}`
+                        : "Unknown Payer"}
                     </span>{" "}
-                    is paying the bill!
+                    {sessionCompleted ? "has paid the bill!" : "is paying the bill!"}
                   </p>
                   <div className="mt-4 flex gap-2 justify-center">
                     {["💀", "🤡", "😂", "🔥", "💸"].map((emoji) => (
