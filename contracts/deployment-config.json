@@ -1,0 +1,12 @@
+{
+  "network": "celo",
+  "chainId": 42220,
+  "contracts": {
+    "payeer": "0x0186Ef5F2255d3D8728e40c455f6614147999589",
+    "payerBadge": "pending"
+  },
+  "explorer": "https://celoscan.io",
+  "rpc": "https://forno.celo.org",
+  "deploymentTime": "2026-04-17T00:00:00Z",
+  "status": "partial"
+}
