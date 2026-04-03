@@ -381,10 +381,14 @@ export default function HomeContent() {
       setActiveSessionId(newSessionId);
 
       if (playerName && address) {
-        setPlayerNamesMap((prev) => ({
-          ...prev,
-          [address.toLowerCase()]: playerName,
-        }));
+        // Immediately update local map and broadcast host's initial name
+        const hostName = { [address.toLowerCase()]: playerName };
+        setPlayerNamesMap(prev => ({...prev, ...hostName}));
+        supabase.channel(`lobby-${newSessionId}`).send({
+          type: 'broadcast',
+          event: 'name_sync',
+          payload: hostName
+        });
       }
 
       if (typeof window !== "undefined") {
@@ -546,7 +550,12 @@ export default function HomeContent() {
                     placeholder="Enter your display name"
                     className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-green-500 text-black font-medium"
                     value={playerName}
-                    onChange={(e) => setPlayerName(e.target.value)}
+                    onChange={(e) => {
+                      setPlayerName(e.target.value);
+                      if (address) {
+                        setPlayerNamesMap(prev => ({ ...prev, [address.toLowerCase()]: e.target.value }));
+                      }
+                    }}
                   />
                 </div>
                 <div>
@@ -851,8 +860,7 @@ export default function HomeContent() {
                   </h3>
                   <p className="text-green-700 font-medium">
                     <span className="font-mono bg-white px-2 py-1 rounded">
-                      {playerNamesMap[winner!.toLowerCase()] ||
-                        `${winner!.slice(0, 6)}...${winner!.slice(-4)}`}
+                      {winner ? (playerNamesMap[winner.toLowerCase()] || `${winner.slice(0, 6)}...${winner.slice(-4)}`) : 'Unknown Payer'}
                     </span>{" "}
                     is paying the bill!
                   </p>
