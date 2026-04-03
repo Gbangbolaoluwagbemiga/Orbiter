@@ -20,13 +20,14 @@ import { QRCodeSVG } from "qrcode.react";
 import { BadgeDisplay } from "@/components/BadgeDisplay";
 import { supabase } from "@/utils/supabase";
 import { Send, Smile } from "lucide-react";
-
+import toast, { Toaster } from "react-hot-toast";
 export default function HomeContent() {
   const [winner, setWinner] = useState<string | null>(null);
   const [amount, setAmount] = useState("0.01");
   const [merchant, setMerchant] = useState("");
   const [isCreatingLobby, setIsCreatingLobby] = useState(false);
   const [isVisualSpinning, setIsVisualSpinning] = useState(false);
+  const [showBadgeAfterPayment, setShowBadgeAfterPayment] = useState(false);
 
   // Custom Names state (Stored locally and pulled from URL for the host)
   const [playerName, setPlayerName] = useState("");
@@ -187,6 +188,12 @@ export default function HomeContent() {
           setRecentReactions((prev) => prev.filter((r) => r.id !== id));
         }, 2000);
       })
+      .on('broadcast', { event: 'spin_started' }, () => {
+        setIsVisualSpinning(true);
+      })
+      .on('broadcast', { event: 'spin_ended' }, () => {
+        setIsVisualSpinning(false);
+      })
       .on(
         "postgres_changes",
         {
@@ -225,6 +232,11 @@ export default function HomeContent() {
       })
       .on("broadcast", { event: "lobby_sync" }, (payload) => {
         setLobbyName(payload.payload.name);
+      })
+      .on("broadcast", { event: "payment_completed" }, (payload) => {
+        const payerName =
+          payload.payload.name || payload.payload.payer.slice(0, 6);
+        toast.success(`${payerName} just paid the bill! 💸`);
       })
       .subscribe();
 
@@ -472,6 +484,7 @@ export default function HomeContent() {
     );
 
     setIsVisualSpinning(true); // Start visual spin
+    supabase.channel(`lobby-${activeSessionId}`).send({ type: 'broadcast', event: 'spin_started' });
 
     try {
       console.log(
@@ -490,16 +503,18 @@ export default function HomeContent() {
       console.error("Failed to select payer. Error details:", error);
     } finally {
       setIsVisualSpinning(false); // Ensure visual spin stops
+      supabase.channel(`lobby-${activeSessionId}`).send({ type: 'broadcast', event: 'spin_ended' });
     }
   };
 
   const copyLink = () => {
     navigator.clipboard.writeText(sessionUrl);
-    alert("Link copied to clipboard!");
+    toast.success("Lobby link copied!");
   };
 
   return (
     <main className="flex-1 flex flex-col items-center p-8 max-w-4xl mx-auto w-full">
+      <Toaster /> {/* Add Toaster component here */}
       <header className="w-full flex justify-between items-center mb-12">
         <a
           href="/"
@@ -529,7 +544,6 @@ export default function HomeContent() {
           />
         </div>
       </header>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full">
         {/* Left Column: Lobby Setup or Joined Status */}
         <section className="space-y-6">
@@ -749,7 +763,27 @@ export default function HomeContent() {
           )}
 
           {/* Add Badge Display for the connected user */}
-          <BadgeDisplay address={address} />
+          {showBadgeAfterPayment && (
+            <div className="flex flex-col items-center">
+              <button
+                onClick={() => setShowBadgeAfterPayment(false)}
+                className="mb-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                Hide Badge
+              </button>
+              <BadgeDisplay address={address} />
+            </div>
+          )}
+          {!showBadgeAfterPayment && address && (
+            <div className="mt-8 text-center">
+              <button
+                onClick={() => setShowBadgeAfterPayment(true)}
+                className="text-sm text-blue-600 hover:text-blue-800 transition-colors font-medium"
+              >
+                Show Your Honor Badge
+              </button>
+            </div>
+          )}
         </section>
 
         {/* Right Column: The Spinner */}
@@ -820,25 +854,46 @@ export default function HomeContent() {
                     {sessionCompleted ? "TAB SETTLED! ✅" : "HEY CHOSEN! 🎯"}
                   </h3>
                   <p className="text-red-700 font-medium mb-6">
-                    {sessionCompleted 
-                      ? "The bill has been paid and your badge has been updated!" 
+                    {sessionCompleted
+                      ? "The bill has been paid and your badge has been updated!"
                       : "You won the privilege to pay the bill!"}
                   </p>
                   {isConnected && !sessionCompleted && (
                     <div className="space-y-3">
                       <button
                         onClick={async () => {
-                          if (!sessionDetails) return;
+                          if (!sessionDetails || activeSessionId === null)
+                            return;
                           try {
                             const amountInCelo = formatEther(
                               (sessionDetails as any)[0],
+                            );
+                            console.log(
+                              "Attempting to complete payment. Session:",
+                              activeSessionId,
+                              "Amount:",
+                              amountInCelo,
                             );
                             const tx = await completePayment(
                               activeSessionId,
                               amountInCelo,
                             );
                             console.log("Payment sent! Hash:", tx);
+                            setShowBadgeAfterPayment(true); // Show badge after successful payment
                             setTimeout(() => refetchSessionDetails(), 5000);
+
+                            // Notify other players via Supabase broadcast
+                            supabase.channel(`lobby-${activeSessionId}`).send({
+                              type: "broadcast",
+                              event: "payment_completed",
+                              payload: {
+                                payer: address,
+                                amount: amountInCelo,
+                                name:
+                                  playerNamesMap[address!.toLowerCase()] ||
+                                  address,
+                              },
+                            });
                           } catch (e) {
                             console.error("Failed to pay:", e);
                           }
@@ -859,7 +914,7 @@ export default function HomeContent() {
                   )}
                   {sessionCompleted && (
                     <div className="mt-4 p-4 bg-green-100 text-green-800 rounded-xl font-bold border border-green-200">
-                       Transaction Confirmed! 🚀
+                      Transaction Confirmed! 🚀
                     </div>
                   )}
                 </>
@@ -875,7 +930,9 @@ export default function HomeContent() {
                           `${winner.slice(0, 6)}...${winner.slice(-4)}`
                         : "Unknown Payer"}
                     </span>{" "}
-                    {sessionCompleted ? "has paid the bill!" : "is paying the bill!"}
+                    {sessionCompleted
+                      ? "has paid the bill!"
+                      : "is paying the bill!"}
                   </p>
                   <div className="mt-4 flex gap-2 justify-center">
                     {["💀", "🤡", "😂", "🔥", "💸"].map((emoji) => (

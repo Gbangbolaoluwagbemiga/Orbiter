@@ -13,25 +13,34 @@ interface SpinnerProps {
 export function Spinner({ participants, onFinish, isSpinning }: SpinnerProps) {
   const controls = useAnimation();
 
-  const spin = async () => {
-    if (isSpinning || participants.length === 0) return; // isSpinning now comes from props
+  useEffect(() => {
+    if (isSpinning) {
+      // Start animation when isSpinning prop is true
+      const spinDuration = 3 + Math.random() * 2; // 3-5 seconds
+      const rotation = 360 * 5 + Math.random() * 360; // At least 5 full rotations
 
-    const spinDuration = 3 + Math.random() * 2; // 3-5 seconds
-    const rotation = 360 * 5 + Math.random() * 360; // At least 5 full rotations
-
-    await controls.start({
-      rotate: rotation,
-      transition: { duration: spinDuration, ease: "easeOut" },
-    });
-
-    if (participants.length > 0) {
-      const finalRotation = rotation % 360;
-      const segmentAngle = 360 / participants.length;
-      const winnerIndex =
-        Math.floor((360 - finalRotation) / segmentAngle) % participants.length;
-      onFinish(participants[winnerIndex]);
+      controls
+        .start({
+          rotate: rotation,
+          transition: { duration: spinDuration, ease: "easeOut" },
+        })
+        .then(() => {
+          // Once animation completes, call onFinish
+          if (participants.length > 0) {
+            const finalRotation = rotation % 360;
+            const segmentAngle = 360 / participants.length;
+            const winnerIndex =
+              Math.floor((360 - finalRotation) / segmentAngle) %
+              participants.length;
+            onFinish(participants[winnerIndex]);
+          }
+        });
+    } else {
+      // Reset rotation when not spinning
+      controls.stop();
+      controls.set({ rotate: 0 });
     }
-  };
+  }, [isSpinning, participants, controls, onFinish]);
 
   return (
     <div className="flex flex-col items-center gap-8">
@@ -92,7 +101,6 @@ export function Spinner({ participants, onFinish, isSpinning }: SpinnerProps) {
       {/* Internal spin button hidden when acting as a visual-only component */}
       {false && (
         <button
-          onClick={spin}
           disabled={isSpinning || participants.length < 2}
           className="px-8 py-3 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 disabled:bg-gray-400 transition-colors shadow-lg"
         >

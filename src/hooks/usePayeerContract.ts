@@ -2,28 +2,29 @@ import { useWriteContract, useReadContract } from "wagmi";
 import { parseEther } from "viem";
 
 // Deployed contract address on Celo mainnet
-export const CONTRACT_ADDRESS = '0xe32e98b057C80554Ba449ae00eC1d57865A58ACc';
-export const BADGE_CONTRACT_ADDRESS = '0xA3aF36A970C9d3bac1e7fce1f881eBDc599048E6';
+export const CONTRACT_ADDRESS = "0xe32e98b057C80554Ba449ae00eC1d57865A58ACc";
+export const BADGE_CONTRACT_ADDRESS =
+  "0xA3aF36A970C9d3bac1e7fce1f881eBDc599048E6";
 
 export const BADGE_CONTRACT_ABI = [
   {
-    inputs: [{ name: 'user', type: 'address' }],
-    name: 'getBadge',
+    inputs: [{ name: "user", type: "address" }],
+    name: "getBadge",
     outputs: [
       {
         components: [
-          { name: 'totalPaid', type: 'uint256' },
-          { name: 'sessionsPaid', type: 'uint256' },
-          { name: 'lastPaidAt', type: 'uint256' },
-          { name: 'rarity', type: 'string' }
+          { name: "totalPaid", type: "uint256" },
+          { name: "sessionsPaid", type: "uint256" },
+          { name: "lastPaidAt", type: "uint256" },
+          { name: "rarity", type: "string" },
         ],
-        name: '',
-        type: 'tuple'
-      }
+        name: "",
+        type: "tuple",
+      },
     ],
-    stateMutability: 'view',
-    type: 'function'
-  }
+    stateMutability: "view",
+    type: "function",
+  },
 ] as const;
 
 export const CONTRACT_ABI = [
