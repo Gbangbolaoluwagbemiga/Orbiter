@@ -221,17 +221,37 @@ export default function HomeContent() {
         },
         (payload) => {
           console.log("DB Update received:", payload.new);
-          if (payload.new.name) setLobbyName(payload.new.name);
-          if (payload.new.player_names)
-            setPlayerNamesMap(payload.new.player_names);
+          // 1. Only update lobby name if we are NOT the host address (source of truth)
+          const dbHost = payload.new.host_address;
+          if (payload.new.name !== undefined && payload.new.name !== lobbyName && address?.toLowerCase() !== dbHost?.toLowerCase()) {
+            setLobbyName(payload.new.name);
+          }
+          // 2. Clear winner state if the DB says common winner is reset (though contract is source of truth)
+          if (payload.new.player_names) {
+            setPlayerNamesMap((prev) => {
+              const merged = { ...payload.new.player_names };
+              if (address && prev[address.toLowerCase()]) {
+                merged[address.toLowerCase()] = prev[address.toLowerCase()];
+              }
+              return merged;
+            });
+          }
         },
       )
       .on("broadcast", { event: "name_sync" }, (payload) => {
-        // Still use broadcast for immediate UI feel
-        setPlayerNamesMap((prev) => ({ ...prev, ...payload.payload }));
+        // MERGE: Keep our current local name for our address
+        setPlayerNamesMap((prev) => {
+          const merged = { ...prev, ...payload.payload };
+          if (address && prev[address.toLowerCase()]) {
+            merged[address.toLowerCase()] = prev[address.toLowerCase()];
+          }
+          return merged;
+        });
       })
       .on("broadcast", { event: "lobby_sync" }, (payload) => {
-        setLobbyName(payload.payload.name);
+        if (payload.payload.name !== lobbyName && !isHost) {
+          setLobbyName(payload.payload.name);
+        }
       })
       .on("broadcast", { event: "payment_completed" }, (payload) => {
         const payerName =
@@ -277,36 +297,38 @@ export default function HomeContent() {
     isConnected,
   ]);
 
-  // Sync names to others when mine changes
+  // Sync names to others when mine changes (DEBOUNCED)
   useEffect(() => {
     if (activeSessionId !== null && address && playerName) {
-      const myName = { [address.toLowerCase()]: playerName };
+      const timeoutId = setTimeout(() => {
+        const myName = { [address.toLowerCase()]: playerName };
 
-      // Broadcast for immediate feedback
-      supabase.channel(`lobby-${activeSessionId}`).send({
-        type: "broadcast",
-        event: "name_sync",
-        payload: myName,
-      });
+        // Broadcast for immediate feedback
+        supabase.channel(`lobby-${activeSessionId}`).send({
+          type: "broadcast",
+          event: "name_sync",
+          payload: myName,
+        });
 
-      // Update DB
-      const updateMyNameInDB = async () => {
-        // Use a RPC or a careful update to merge jsonb
-        const { data } = await supabase
-          .from("lobbies")
-          .select("player_names")
-          .eq("id", activeSessionId)
-          .single();
-
-        const currentNames = data?.player_names || {};
-        if (currentNames[address.toLowerCase()] !== playerName) {
-          await supabase
+        // Update DB
+        const updateMyNameInDB = async () => {
+          const { data } = await supabase
             .from("lobbies")
-            .update({ player_names: { ...currentNames, ...myName } })
-            .eq("id", activeSessionId);
-        }
-      };
-      updateMyNameInDB();
+            .select("player_names")
+            .eq("id", activeSessionId)
+            .single();
+
+          const currentNames = data?.player_names || {};
+          if (currentNames[address.toLowerCase()] !== playerName) {
+            await supabase
+              .from("lobbies")
+              .update({ player_names: { ...currentNames, ...myName } })
+              .eq("id", activeSessionId);
+          }
+        };
+        updateMyNameInDB();
+      }, 500); // 500ms debounce
+      return () => clearTimeout(timeoutId);
     }
   }, [playerName, address, activeSessionId]);
 
@@ -477,22 +499,16 @@ export default function HomeContent() {
   const handleSpin = async () => {
     if (activeSessionId === null || isVisualSpinning) return;
 
-    console.log("SPIN THE WHEEL CLICKED. Active Session:", activeSessionId);
-    console.log(
-      "Current lockAndSelectPayerPending status:",
-      lockAndSelectPayerPending,
-    );
-
-    setIsVisualSpinning(true); // Start visual spin
-    supabase.channel(`lobby-${activeSessionId}`).send({ type: 'broadcast', event: 'spin_started' });
-
     try {
       console.log(
         "Triggering lockAndSelectPayer for session:",
         activeSessionId,
       );
       const tx = await lockAndSelectPayer(activeSessionId);
-      console.log("lockAndSelectPayer transaction sent:", tx);
+      console.log("lockAndSelectPayer transaction signed! Hash:", tx);
+      
+      setIsVisualSpinning(true); // Start visual spin ONLY after signing
+      supabase.channel(`lobby-${activeSessionId}`).send({ type: 'broadcast', event: 'spin_started' });
 
       // Wait for it to mine
       await new Promise((resolve) => setTimeout(resolve, 4000));
@@ -623,7 +639,16 @@ export default function HomeContent() {
                   <input
                     type="text"
                     value={lobbyName}
-                    onChange={(e) => setLobbyName(e.target.value)}
+                    onChange={(e) => {
+                       setLobbyName(e.target.value);
+                       // Update DB with a short delay for smooth typing
+                       const name = e.target.value;
+                       setTimeout(async () => {
+                          if (activeSessionId !== null && isHost) {
+                             await supabase.from("lobbies").update({ name }).eq("id", activeSessionId);
+                          }
+                       }, 500);
+                    }}
                     onBlur={() => setIsEditingLobbyName(false)}
                     autoFocus
                     className="bg-purple-50 text-xl text-purple-900 font-bold border-b-2 border-purple-500 outline-none w-48"

@@ -21,10 +21,10 @@ const config = getDefaultConfig({
   projectId: PROJECT_ID,
   chains: [celo, celoAlfajores],
   transports: {
-    [celo.id]: http("https://rpc.ankr.com/celo"),
+    [celo.id]: http("https://forno.celo.org"),
     [celoAlfajores.id]: http("https://alfajores-forno.celo-testnet.org"),
   },
-  ssr: true, // Enable SSR
+  ssr: true,
 });
 
 const queryClient = new QueryClient({
