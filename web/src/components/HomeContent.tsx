@@ -501,9 +501,7 @@ export default function HomeContent() {
       refetchSessionDetails();
     } catch (error) {
       console.error("Failed to select payer. Error details:", error);
-    } finally {
-      setIsVisualSpinning(false); // Ensure visual spin stops
-      supabase.channel(`lobby-${activeSessionId}`).send({ type: 'broadcast', event: 'spin_ended' });
+      setIsVisualSpinning(false); // Reset if error before mining
     }
   };
 
@@ -804,8 +802,12 @@ export default function HomeContent() {
             participants={participantsList.map(
               (p) => playerNamesMap[p.toLowerCase()] || `${p.slice(0, 6)}...`,
             )}
-            onFinish={() => setIsVisualSpinning(false)}
+            onFinish={() => {
+              setIsVisualSpinning(false);
+              supabase.channel(`lobby-${activeSessionId}`).send({ type: 'broadcast', event: 'spin_ended' });
+            }}
             isSpinning={isVisualSpinning}
+            targetWinner={winner}
           />
 
           {/* Show spin button if Host and session not locked/completed */}

@@ -7,40 +7,56 @@ import { Loader2 } from "lucide-react";
 interface SpinnerProps {
   participants: string[];
   onFinish: (winner: string) => void;
-  isSpinning: boolean; // Add this prop
+  isSpinning: boolean;
+  targetWinner?: string | null;
 }
 
-export function Spinner({ participants, onFinish, isSpinning }: SpinnerProps) {
+export function Spinner({ participants, onFinish, isSpinning, targetWinner }: SpinnerProps) {
   const controls = useAnimation();
+  const [internalState, setInternalState] = useState<"idle" | "tension" | "decelerating">("idle");
 
   useEffect(() => {
     if (isSpinning) {
-      // Start animation when isSpinning prop is true
-      const spinDuration = 3 + Math.random() * 2; // 3-5 seconds
-      const rotation = 360 * 5 + Math.random() * 360; // At least 5 full rotations
-
-      controls
-        .start({
-          rotate: rotation,
-          transition: { duration: spinDuration, ease: "easeOut" },
-        })
-        .then(() => {
-          // Once animation completes, call onFinish
-          if (participants.length > 0) {
-            const finalRotation = rotation % 360;
-            const segmentAngle = 360 / participants.length;
-            const winnerIndex =
-              Math.floor((360 - finalRotation) / segmentAngle) %
-              participants.length;
-            onFinish(participants[winnerIndex]);
-          }
+      if (!targetWinner) {
+        // Tension phase: Spin fast and constantly
+        setInternalState("tension");
+        controls.start({
+          rotate: 360 * 50, // Huge number to simulate infinite
+          transition: { duration: 50, ease: "linear" }
         });
+      } else if (internalState !== "decelerating") {
+        // Deceleration phase: land on targetWinner over 10 seconds
+        setInternalState("decelerating");
+        
+        const winnerIndex = participants.findIndex(p => p.toLowerCase() === targetWinner.toLowerCase());
+        if (winnerIndex !== -1 && participants.length > 0) {
+          const segmentAngle = 360 / participants.length;
+          const winnerCenterAngle = (segmentAngle * winnerIndex) + (segmentAngle / 2);
+          
+          // Get current rotation to ensure smooth continuation
+          // (Framer motion rotation is cumulative)
+          const currentRotation = (controls as any).get()?.rotate || 0;
+          const remainingInCurrentLap = 360 - (currentRotation % 360);
+          
+          // Total target = Current + enough full laps + landing offset
+          const laps = 360 * 8; // 8 more laps for anxiety
+          const targetRotation = currentRotation + remainingInCurrentLap + laps + (360 - winnerCenterAngle);
+
+          controls.start({
+            rotate: targetRotation,
+            transition: { duration: 10, ease: [0.12, 0, 0.39, 0] } // Dramatic slow-down ease
+          }).then(() => {
+            onFinish(targetWinner);
+            setInternalState("idle");
+          });
+        }
+      }
     } else {
-      // Reset rotation when not spinning
       controls.stop();
       controls.set({ rotate: 0 });
+      setInternalState("idle");
     }
-  }, [isSpinning, participants, controls, onFinish]);
+  }, [isSpinning, targetWinner, participants, controls, onFinish, internalState]);
 
   return (
     <div className="flex flex-col items-center gap-8">
