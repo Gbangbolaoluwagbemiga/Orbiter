@@ -5,13 +5,13 @@ import { motion, useMotionValue, animate } from "framer-motion";
 import { Loader2 } from "lucide-react";
 
 interface SpinnerProps {
-  participants: string[];
-  onFinish: (winner: string) => void;
+  participants: { name: string; address: string }[];
+  onFinish: (winnerAddress: string) => void;
   isSpinning: boolean;
-  targetWinner?: string | null;
+  targetWinnerAddress?: string | null;
 }
 
-export function Spinner({ participants, onFinish, isSpinning, targetWinner }: SpinnerProps) {
+export function Spinner({ participants, onFinish, isSpinning, targetWinnerAddress }: SpinnerProps) {
   const rotation = useMotionValue(0);
   const [internalState, setInternalState] = useState<"idle" | "tension" | "decelerating">("idle");
   const [safetyWinner, setSafetyWinner] = useState<string | null>(null);
@@ -20,7 +20,7 @@ export function Spinner({ participants, onFinish, isSpinning, targetWinner }: Sp
     let safetyTimeout: NodeJS.Timeout;
 
     if (isSpinning) {
-      if (!targetWinner && !safetyWinner) {
+      if (!targetWinnerAddress && !safetyWinner) {
         setInternalState("tension");
         animate(rotation, rotation.get() + 360 * 100, {
           duration: 100,
@@ -29,43 +29,44 @@ export function Spinner({ participants, onFinish, isSpinning, targetWinner }: Sp
         });
 
         safetyTimeout = setTimeout(() => {
-          if (!targetWinner && participants.length > 0) {
+          if (!targetWinnerAddress && participants.length > 0) {
             const randomWinner = participants[Math.floor(Math.random() * participants.length)];
-            setSafetyWinner(randomWinner);
+            setSafetyWinner(randomWinner.address);
           }
-        }, 7000);
+        }, 8000);
       } else {
-        const finalWinner = targetWinner || safetyWinner;
-        if (finalWinner && internalState !== "decelerating" && participants.length > 0) {
+        const finalWinnerAddr = targetWinnerAddress || safetyWinner;
+        if (finalWinnerAddr && internalState !== "decelerating" && participants.length > 0) {
           setInternalState("decelerating");
           
-          const winnerIndex = participants.findIndex(p => p.toLowerCase() === finalWinner.toLowerCase());
+          const winnerIndex = participants.findIndex(p => p.address.toLowerCase() === finalWinnerAddr.toLowerCase());
+          const safeIndex = winnerIndex === -1 ? 0 : winnerIndex;
+          
           const segmentAngle = 360 / participants.length;
-          const winnerCenterAngle = (segmentAngle * winnerIndex) + (segmentAngle / 2);
+          const winnerCenterAngle = (segmentAngle * safeIndex) + (segmentAngle / 2);
           
           const currentRotation = rotation.get();
           const remainingInCurrentLap = 360 - (currentRotation % 360);
-          const targetRotation = currentRotation + remainingInCurrentLap + (360 * 6) + winnerCenterAngle;
+          const targetRotation = currentRotation + remainingInCurrentLap + (360 * 10) + winnerCenterAngle;
 
           animate(rotation, targetRotation, {
-            duration: 8,
-            ease: [0.12, 0, 0.39, 0],
+            duration: 11, // 11 seconds of maximum anxiety
+            ease: [0.16, 1, 0.3, 1], // Custom heavy ease-out
             onComplete: () => {
               setInternalState("idle");
-              onFinish(finalWinner);
+              onFinish(finalWinnerAddr);
               setSafetyWinner(null);
             }
           });
         }
       }
     } else {
-      // Don't reset rotation to 0 here, otherwise it jumps back after landing!
       setInternalState("idle");
       setSafetyWinner(null);
     }
 
     return () => clearTimeout(safetyTimeout);
-  }, [isSpinning, targetWinner, safetyWinner, participants, onFinish, internalState, rotation]);
+  }, [isSpinning, targetWinnerAddress, safetyWinner, participants, onFinish, internalState, rotation]);
 
   return (
     <div className="flex flex-col items-center gap-8">
@@ -87,7 +88,7 @@ export function Spinner({ participants, onFinish, isSpinning, targetWinner }: Sp
         >
           {participants.map((p, i) => {
             const angle = (360 / participants.length) * i + 360 / participants.length / 2;
-            const radius = 85; 
+            const radius = 80; 
             const x = Math.cos(((angle - 90) * Math.PI) / 180) * radius;
             const y = Math.sin(((angle - 90) * Math.PI) / 180) * radius;
 
@@ -97,42 +98,42 @@ export function Spinner({ participants, onFinish, isSpinning, targetWinner }: Sp
                 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
                 style={{ transform: `translate(${x}px, ${y}px) rotate(${angle}deg)` }}
               >
-                <span className="font-black text-xs text-white drop-shadow-md whitespace-nowrap uppercase tracking-tighter">
-                  {p.slice(0, 8)}
+                <span className="font-black text-[10px] text-white drop-shadow-md whitespace-nowrap uppercase tracking-tighter">
+                  {p.name.slice(0, 7)}
                 </span>
               </div>
             );
           })}
         </div>
 
-        {/* Clock Hand / Needle */}
+        {/* Shorter Needle with Tension Easing */}
         <motion.div
-           className="absolute top-1/2 left-1/2 w-1.5 h-36 bg-gray-900 rounded-full origin-bottom -translate-x-1/2 -translate-y-full z-20 shadow-lg"
+           className="absolute top-1/2 left-1/2 w-1.5 h-28 bg-gray-900 rounded-full origin-bottom -translate-x-1/2 -translate-y-full z-20 shadow-lg"
            style={{
              rotate: rotation,
              originX: "50%",
              originY: "100%",
            }}
         >
-           {/* Sharp Needle Tip */}
+           {/* Perfectly Aligned Sharp Tip */}
            <div 
-             className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0 h-0"
+             className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full"
              style={{
-               borderLeft: "8px solid transparent",
-               borderRight: "8px solid transparent",
-               borderBottom: "16px solid #dc2626",
-               transform: "translate(-50%, -20%) rotate(0deg)"
+               width: "12px",
+               height: "16px",
+               backgroundColor: "#dc2626",
+               clipPath: "polygon(50% 0%, 0% 100%, 100% 100%)",
+               transform: "translate(-50%, 2px)"
              }}
            />
         </motion.div>
         
-        {/* Center Cap */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 bg-gray-900 rounded-full z-30 border-2 border-gray-600 shadow-xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-gray-900 rounded-full z-30 border-2 border-gray-600 shadow-xl" />
       </div>
 
       {participants.length < 2 && !isSpinning && (
-        <p className="text-gray-400 text-sm font-medium animate-pulse">
-           Add more players to enable the spinner
+        <p className="text-gray-400 text-sm font-medium animate-pulse text-center">
+           Need 2+ players for tension
         </p>
       )}
     </div>

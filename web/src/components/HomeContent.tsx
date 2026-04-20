@@ -824,15 +824,16 @@ export default function HomeContent() {
           </div>
 
           <Spinner
-            participants={participantsList.map(
-              (p) => playerNamesMap[p.toLowerCase()] || `${p.slice(0, 6)}...`,
-            )}
-            onFinish={() => {
+            participants={participantsList.map((p) => ({
+              address: p,
+              name: playerNamesMap[p.toLowerCase()] || `${p.slice(0, 6)}...`,
+            }))}
+            onFinish={(winnerAddress) => {
               setIsVisualSpinning(false);
               supabase.channel(`lobby-${activeSessionId}`).send({ type: 'broadcast', event: 'spin_ended' });
             }}
             isSpinning={isVisualSpinning}
-            targetWinner={winner}
+            targetWinnerAddress={winner}
           />
 
           {/* Show spin button if Host and session not locked/completed */}
@@ -866,9 +867,10 @@ export default function HomeContent() {
               </p>
             )}
 
-          {/* Show results if winner is selected or session is completed */}
-          {(winner || sessionCompleted) && activeSessionId !== null && (
+          {/* Show results if winner is selected and visual spin has completed */}
+          {(winner || sessionCompleted) && !isVisualSpinning && activeSessionId !== null && (
             <div
+              id="result-modal"
               className={`text-center p-8 border-2 rounded-2xl shadow-xl w-full max-w-sm ${
                 winner?.toLowerCase() === address?.toLowerCase()
                   ? "bg-red-50 border-red-200 animate-bounce"
