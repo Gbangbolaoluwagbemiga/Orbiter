@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "WhoPays - Multiplayer Social Payments",
   description: "Who pays the bill? The spinner decides in real-time.",
+  other: {
+    "talentapp:project_verification": "d1a552b3c21fb27ac8757bf94ca6b05069598d5fc3f9ee93a5d7c85ee933f531bd4d5be8b7d610827dd7645947dec25d06e28cb6634f3abaee6d2a12c47630b7",
+  },
 };
 
 export default function RootLayout({
