@@ -11,6 +11,18 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  turbopack: {
+    resolveAlias: {
+      "@metamask/connect-evm": "./empty.js",
+    },
+  },
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@metamask/connect-evm": "./empty.js",
+    };
+    return config;
+  },
 };
 
 export default nextConfig;

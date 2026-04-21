@@ -615,7 +615,7 @@ export default function HomeContent() {
           )}
         </div>
       </header>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full">
+      <div className={`w-full transition-all duration-500 ${activeSessionId === null ? 'max-w-md' : 'grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl'}`}>
         {/* Left Column: Lobby Setup or Joined Status */}
         <section className="space-y-6">
           {/* Create Lobby Card (Hidden if already in a session) */}
@@ -887,10 +887,11 @@ export default function HomeContent() {
           )}
         </section>
 
-        {/* Right Column: The Spinner */}
-        <section className="flex flex-col items-center justify-center space-y-8 relative">
-          {/* Reaction Overlay */}
-          <div className="absolute inset-0 pointer-events-none z-50">
+        {/* Right Column: The Spinner (Hidden until Lobby is created) */}
+        {activeSessionId !== null && (
+          <section className="flex flex-col items-center justify-center space-y-8 relative">
+            {/* Reaction Overlay */}
+            <div className="absolute inset-0 pointer-events-none z-50">
             {recentReactions.map((r) => (
               <div
                 key={r.id}
@@ -1052,8 +1053,9 @@ export default function HomeContent() {
                 </>
               )}
             </div>
-          )}
-        </section>
+            )}
+          </section>
+        )}
       </div>
     </main>
   );
