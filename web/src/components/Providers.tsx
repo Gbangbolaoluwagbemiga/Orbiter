@@ -25,12 +25,9 @@ const PROJECT_ID = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "3fcc6b14
 const connectors = connectorsForWallets(
   [
     {
-      groupName: 'Popular',
+      groupName: 'Wallets',
       wallets: [
         injectedWallet,
-        rainbowWallet,
-        coinbaseWallet,
-        walletConnectWallet,
       ],
     },
   ],
@@ -47,7 +44,7 @@ const config = createConfig({
     [celo.id]: http("https://forno.celo.org"),
     [celoAlfajores.id]: http("https://alfajores-forno.celo-testnet.org"),
   },
-  ssr: true,
+  ssr: false, // Disable Wagmi SSR to prevent hydration/initialization issues on mobile
 });
 
 const queryClient = new QueryClient({
