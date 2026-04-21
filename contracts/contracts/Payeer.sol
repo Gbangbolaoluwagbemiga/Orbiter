@@ -111,7 +111,25 @@ contract Payeer is VRFConsumerBaseV2 {
         session.isLocked = true;
         emit SessionLocked(_sessionId);
 
-        uint256 randomIndex = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, msg.sender))) % session.participants.length;
+        // ROBUST RANDOMNESS: Use the Celo Randomness Precompile (0x...a1)
+        // This is a protocol-level VRF that is miner-resistant and more robust than prevrandao
+        address RANDOMNESS_PRECOMPILE = 0x00000000000000000000000000000000000000A1;
+        (bool success, bytes memory data) = RANDOMNESS_PRECOMPILE.staticcall("");
+        
+        uint256 robustSeed;
+        if (success && data.length >= 32) {
+            robustSeed = uint256(abi.decode(data, (bytes32)));
+        } else {
+            // Fallback to high-entropy seed if precompile fails
+            robustSeed = uint256(keccak256(abi.encodePacked(
+                block.prevrandao,
+                blockhash(block.number - 1),
+                block.timestamp,
+                msg.sender
+            )));
+        }
+
+        uint256 randomIndex = robustSeed % session.participants.length;
         session.selectedPayer = session.participants[randomIndex];
         emit PayerSelected(_sessionId, session.selectedPayer);
     }

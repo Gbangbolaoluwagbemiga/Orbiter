@@ -2,9 +2,9 @@ import { useWriteContract, useReadContract } from "wagmi";
 import { parseEther } from "viem";
 
 // Deployed contract address on Celo mainnet
-export const CONTRACT_ADDRESS = "0xe32e98b057C80554Ba449ae00eC1d57865A58ACc";
+export const CONTRACT_ADDRESS = "0x63dBc50d330eEd8fa70E0063492C1cbcC1f505Ae";
 export const BADGE_CONTRACT_ADDRESS =
-  "0xA3aF36A970C9d3bac1e7fce1f881eBDc599048E6";
+  "0xD6B025f9E889C73EeDD7D2caC7F067F6D0174Ea2";
 
 export const BADGE_CONTRACT_ABI = [
   {

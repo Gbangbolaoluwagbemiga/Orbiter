@@ -1,0 +1,8 @@
+{
+  "network": "celo",
+  "chainId": 42220,
+  "payeer": "0x63dBc50d330eEd8fa70E0063492C1cbcC1f505Ae",
+  "payerBadge": "0xD6B025f9E889C73EeDD7D2caC7F067F6D0174Ea2",
+  "deployer": "0x3Be7fbBDbC73Fc4731D60EF09c4BA1A94DC58E41",
+  "deploymentTime": "2026-04-20T23:49:58.589Z"
+}

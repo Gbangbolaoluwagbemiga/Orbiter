@@ -4,21 +4,42 @@ import * as React from "react";
 import { useState, useEffect } from "react";
 import {
   RainbowKitProvider,
-  getDefaultConfig,
+  connectorsForWallets,
   Chain,
 } from "@rainbow-me/rainbowkit";
-import { WagmiProvider, http, useConfig } from "wagmi";
+import {
+  metaMaskWallet,
+  walletConnectWallet,
+  rainbowWallet,
+  coinbaseWallet
+} from "@rainbow-me/rainbowkit/wallets";
+import { createConfig, WagmiProvider, http } from "wagmi";
 import { celo, celoAlfajores } from "wagmi/chains";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import "@rainbow-me/rainbowkit/styles.css";
 
-// Use a placeholder project ID for development
-const PROJECT_ID =
-  process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo-project-id";
+const PROJECT_ID = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "3fcc6b144964e578c772eccc661b369a";
 
-const config = getDefaultConfig({
-  appName: "WhoPays",
-  projectId: PROJECT_ID,
+const connectors = connectorsForWallets(
+  [
+    {
+      groupName: 'Wallets',
+      wallets: [
+        metaMaskWallet,
+        rainbowWallet,
+        coinbaseWallet,
+        walletConnectWallet,
+      ],
+    },
+  ],
+  {
+    appName: 'WhoPays',
+    projectId: PROJECT_ID,
+  }
+);
+
+const config = createConfig({
+  connectors,
   chains: [celo, celoAlfajores],
   transports: {
     [celo.id]: http("https://forno.celo.org"),
