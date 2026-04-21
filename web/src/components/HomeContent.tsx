@@ -31,6 +31,7 @@ export default function HomeContent() {
   const [showBadgeAfterPayment, setShowBadgeAfterPayment] = useState(false);
   const [isPreloading, setIsPreloading] = useState(true);
   const [paymentToken, setPaymentToken] = useState("CELO"); // "CELO" or "USDC"
+  const [txHash, setTxHash] = useState<string | null>(null);
   const USDC_ADDRESS = "0xcebA9300f24863e411085441E0c089ccB8CE96Be";
 
   // Custom Names state (Stored locally and pulled from URL for the host)
@@ -987,6 +988,7 @@ export default function HomeContent() {
                             }
 
                             console.log("Payment sent! Hash:", tx);
+                            setTxHash(tx);
                             setShowBadgeAfterPayment(true);
                             setTimeout(() => refetchSessionDetails(), 5000);
 
@@ -1014,7 +1016,17 @@ export default function HomeContent() {
                           `Settle ${amount} ${paymentToken}`
                         )}
                       </button>
-                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                      {txHash && (
+                        <a 
+                          href={`https://celoscan.io/tx/${txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-[10px] font-bold text-blue-400 hover:underline uppercase tracking-widest mt-2"
+                        >
+                          View Real Transaction on Explorer ↗
+                        </a>
+                      )}
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-2">
                          MiniPay Fee: Sub-Cent
                       </p>
                     </div>
