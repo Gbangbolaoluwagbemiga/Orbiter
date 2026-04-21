@@ -194,8 +194,36 @@ contract Payeer is VRFConsumerBaseV2 {
         emit PaymentCompleted(_sessionId, msg.sender, msg.value);
     }
 
+    function completePaymentWithToken(uint256 _sessionId, address _token) external {
+        Session storage session = sessions[_sessionId];
+        require(session.selectedPayer != address(0), "Payer not selected yet");
+        require(!session.completed, "Payment already completed");
+        require(msg.sender == session.selectedPayer, "Only the selected payer can pay");
+
+        IERC20 token = IERC20(_token);
+        require(token.transferFrom(msg.sender, session.merchant, session.amount), "Token transfer failed");
+
+        session.completed = true;
+
+        if (address(payerBadgeContract) != address(0)) {
+            uint256 existingTokenId = payerBadgeContract.userBadges(msg.sender);
+            if (existingTokenId == 0) {
+                payerBadgeContract.mintBadge(msg.sender);
+                payerBadgeContract.updateBadge(msg.sender, session.amount);
+            } else {
+                payerBadgeContract.updateBadge(msg.sender, session.amount);
+            }
+        }
+
+        emit PaymentCompleted(_sessionId, msg.sender, session.amount);
+    }
+
     // MULTIPLAYER LOBBY: Get all participants
     function getSessionParticipants(uint256 _sessionId) external view returns (address[] memory) {
         return sessions[_sessionId].participants;
     }
+}
+
+interface IERC20 {
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
 }

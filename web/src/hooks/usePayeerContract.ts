@@ -2,9 +2,9 @@ import { useWriteContract, useReadContract } from "wagmi";
 import { parseEther } from "viem";
 
 // Deployed contract address on Celo mainnet
-export const CONTRACT_ADDRESS = "0x63dBc50d330eEd8fa70E0063492C1cbcC1f505Ae";
+export const CONTRACT_ADDRESS = "0x5fA80497E70506E3CB8a2e32b838782aF31E005A";
 export const BADGE_CONTRACT_ADDRESS =
-  "0xD6B025f9E889C73EeDD7D2caC7F067F6D0174Ea2";
+  "0x956D4eeF22377d83D5cc31E0951a4591F08aECEC";
 
 export const BADGE_CONTRACT_ABI = [
   {
@@ -60,6 +60,16 @@ export const CONTRACT_ABI = [
     type: "function",
   },
   {
+    inputs: [
+      { name: "_sessionId", type: "uint256" },
+      { name: "_token", type: "address" },
+    ],
+    name: "completePaymentWithToken",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
     inputs: [{ name: "_sessionId", type: "uint256" }],
     name: "getSessionParticipants",
     outputs: [{ name: "", type: "address[]" }],
@@ -106,6 +116,10 @@ export function usePayeerContract() {
   const {
     writeContractAsync: writeCompletePayment,
     isPending: completePaymentPending,
+  } = useWriteContract();
+  const {
+    writeContractAsync: writeCompletePaymentWithToken,
+    isPending: completePaymentWithTokenPending,
   } = useWriteContract();
 
   const {
@@ -177,11 +191,24 @@ export function usePayeerContract() {
     });
   };
 
+  const completePaymentWithToken = async (
+    sessionId: number,
+    token: string,
+  ) => {
+    return writeCompletePaymentWithToken({
+      address: CONTRACT_ADDRESS as `0x${string}`,
+      abi: CONTRACT_ABI,
+      functionName: "completePaymentWithToken",
+      args: [BigInt(sessionId), token as `0x${string}`],
+    });
+  };
+
   return {
     createLobby,
     joinSession,
     lockAndSelectPayer,
     completePayment,
+    completePaymentWithToken,
     sessionCount,
     sessionCountLoading,
     refetchSessionCount,
@@ -189,6 +216,7 @@ export function usePayeerContract() {
     joinSessionPending,
     lockAndSelectPayerPending,
     completePaymentPending,
+    completePaymentWithTokenPending,
     CONTRACT_ADDRESS,
     CONTRACT_ABI,
   };

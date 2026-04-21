@@ -1,12 +1,25 @@
 "use client";
 
-import { useReadContract, useAccount } from "wagmi";
+import { useReadContract, useAccount, useConnect } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { injected } from "wagmi/connectors";
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from "@/hooks/usePayeerContract";
 import { BadgeDisplay } from "@/components/BadgeDisplay";
+import { useState, useEffect } from "react";
 
 export default function AnalyticsContent() {
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
+  const { connect } = useConnect();
+  const [isMiniPay, setIsMiniPay] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).ethereum?.isMiniPay) {
+      setIsMiniPay(true);
+      if (!isConnected) {
+        connect({ connector: injected() });
+      }
+    }
+  }, [isConnected, connect]);
 
   const { data: sessionCount } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
@@ -43,7 +56,7 @@ export default function AnalyticsContent() {
           >
             Back to App
           </a>
-          <ConnectButton showBalance={false} />
+          {!isMiniPay && <ConnectButton showBalance={false} />}
         </div>
       </header>
 

@@ -11,7 +11,8 @@ import {
   metaMaskWallet,
   walletConnectWallet,
   rainbowWallet,
-  coinbaseWallet
+  coinbaseWallet,
+  injectedWallet
 } from "@rainbow-me/rainbowkit/wallets";
 import { createConfig, WagmiProvider, http } from "wagmi";
 import { celo, celoAlfajores } from "wagmi/chains";
@@ -25,6 +26,7 @@ const connectors = connectorsForWallets(
     {
       groupName: 'Wallets',
       wallets: [
+        injectedWallet,
         metaMaskWallet,
         rainbowWallet,
         coinbaseWallet,
