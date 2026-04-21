@@ -581,9 +581,9 @@ export default function HomeContent() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center p-4 sm:p-8 w-full">
+    <main className={`min-h-screen flex flex-col items-center p-4 sm:p-8 w-full ${activeSessionId === null ? "justify-center" : ""}`}>
       <Toaster /> {/* Add Toaster component here */}
-      <header className="w-full max-w-5xl flex justify-between items-center mb-8 sm:mb-12">
+      <header className={`w-full max-w-5xl flex justify-between items-center mb-8 sm:mb-12 ${activeSessionId === null ? "fixed top-0 p-4 sm:p-8" : ""}`}>
         <a
           href="/"
           className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer group"
@@ -616,7 +616,7 @@ export default function HomeContent() {
           )}
         </div>
       </header>
-      <div className={`w-full transition-all duration-500 ${activeSessionId === null ? 'max-w-md' : 'grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl'}`}>
+      <div className={`w-full transition-all duration-500 flex flex-col items-center ${activeSessionId === null ? 'max-w-md' : 'grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl'}`}>
         {/* Left Column: Lobby Setup or Joined Status */}
         <section className="space-y-6">
           {/* Create Lobby Card (Hidden if already in a session) */}
