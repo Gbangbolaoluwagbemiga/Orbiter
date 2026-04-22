@@ -41,6 +41,7 @@ export default function HomeContent() {
   );
   const [lobbyName, setLobbyName] = useState("Lobby");
   const [isEditingLobbyName, setIsEditingLobbyName] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
 
   const { isConnected, address, chain } = useAccount();
   const { connect } = useConnect();
@@ -616,9 +617,11 @@ export default function HomeContent() {
           )}
         </div>
       </header>
-      <div className={`w-full transition-all duration-500 flex flex-col items-center ${activeSessionId === null ? 'max-w-md' : 'grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl'}`}>
-        {/* Left Column: Lobby Setup or Joined Status */}
-        <section className="space-y-6">
+      <div className={`w-full transition-all duration-500 flex flex-col items-center ${activeSessionId === null ? 'max-w-md' : 'max-w-5xl'}`}>
+        <div className={`w-full ${activeSessionId === null ? '' : 'grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12'}`}>
+          {/* On Mobile, we reverse order to show Spinner at top if active */}
+          <div className={`${activeSessionId !== null ? 'order-2 md:order-1' : ''} space-y-6 w-full`}>
+            {/* Left Column Content */}
           {/* Create Lobby Card (Hidden if already in a session) */}
           {activeSessionId === null ? (
             <div className="glass-card p-6 sm:p-8 rounded-[2rem]">
@@ -777,19 +780,27 @@ export default function HomeContent() {
               )}
 
               {isHost && !sessionIsLocked && (
-                <div className="mb-8 flex flex-col items-center p-6 bg-white/5 rounded-[1.5rem] border border-white/10">
-                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mb-4">
-                    Invite Friends
-                  </p>
-                  <div className="bg-white p-4 rounded-3xl shadow-[0_0_50px_rgba(255,255,255,0.1)] mb-4">
-                    <QRCodeSVG value={sessionUrl} size={140} fgColor="#000" />
-                  </div>
-                  <button
-                    onClick={copyLink}
-                    className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase tracking-widest hover:text-white transition-colors"
+                <div className="mb-6 flex flex-col items-center">
+                  <button 
+                    onClick={() => setShowInvite(!showInvite)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-black text-blue-400 uppercase tracking-widest hover:bg-white/10 transition-all mb-4"
                   >
-                    <LinkIcon className="w-3 h-3" /> Copy Share Link
+                    <LinkIcon className="w-3 h-3" /> {showInvite ? 'Hide Invite' : 'Invite Squad'}
                   </button>
+                  
+                  {showInvite && (
+                    <div className="flex flex-col items-center p-6 bg-white/5 rounded-[1.5rem] border border-white/10 animate-in fade-in zoom-in duration-300 w-full">
+                      <div className="bg-white p-4 rounded-3xl shadow-[0_0_50px_rgba(255,255,255,0.1)] mb-4">
+                        <QRCodeSVG value={sessionUrl} size={140} fgColor="#000" />
+                      </div>
+                      <button
+                        onClick={copyLink}
+                        className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-white transition-colors"
+                      >
+                        Copy Share Link
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -886,189 +897,190 @@ export default function HomeContent() {
               </button>
             </div>
           )}
-        </section>
-
-        {/* Right Column: The Spinner (Hidden until Lobby is created) */}
-        {activeSessionId !== null && (
-          <section className="flex flex-col items-center justify-center space-y-8 relative">
-            {/* Reaction Overlay */}
-            <div className="absolute inset-0 pointer-events-none z-50">
-            {recentReactions.map((r) => (
-              <div
-                key={r.id}
-                className="absolute left-1/2 top-1/2 animate-bounce-up text-4xl"
-              >
-                {r.emoji}
+          
+          {/* Right Column: The Spinner (Hidden until Lobby is created, Moves to TOP on mobile) */}
+          {activeSessionId !== null && (
+            <section className="order-1 md:order-2 flex flex-col items-center justify-center space-y-6 sm:space-y-8 relative py-4">
+              {/* Reaction Overlay */}
+              <div className="absolute inset-0 pointer-events-none z-50">
+                {recentReactions.map((r) => (
+                  <div
+                    key={r.id}
+                    className="absolute left-1/2 top-1/2 animate-bounce-up text-4xl"
+                  >
+                    {r.emoji}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          <Spinner
-            participants={participantsList.map((p) => ({
-              address: p,
-              name: playerNamesMap[p.toLowerCase()] || `${p.slice(0, 6)}...`,
-            }))}
-            onFinish={(winnerAddress) => {
-              setIsVisualSpinning(false);
-              supabase.channel(`lobby-${activeSessionId}`).send({ type: 'broadcast', event: 'spin_ended' });
-            }}
-            isSpinning={isVisualSpinning}
-            targetWinnerAddress={winner}
-          />
+              <Spinner
+                participants={participantsList.map((p) => ({
+                  address: p,
+                  name: playerNamesMap[p.toLowerCase()] || `${p.slice(0, 6)}...`,
+                }))}
+                onFinish={(winnerAddress) => {
+                  setIsVisualSpinning(false);
+                  supabase.channel(`lobby-${activeSessionId}`).send({ type: 'broadcast', event: 'spin_ended' });
+                }}
+                isSpinning={isVisualSpinning}
+                targetWinnerAddress={winner}
+              />
 
-          {/* Show spin button if Host and session not locked/completed */}
-          {isHost &&
-            activeSessionId !== null &&
-            !sessionIsLocked &&
-            !sessionCompleted && (
-              <button
-                onClick={handleSpin}
-                disabled={
-                  participantsList.length < 2 ||
-                  lockAndSelectPayerPending ||
-                  isVisualSpinning
-                }
-                className="px-10 py-4 bg-red-600 text-white rounded-full font-black text-xl hover:bg-red-700 disabled:bg-gray-400 transition-all shadow-[0_0_20px_rgba(220,38,38,0.5)] hover:shadow-[0_0_30px_rgba(220,38,38,0.8)] disabled:shadow-none hover:scale-105"
-              >
-                {lockAndSelectPayerPending || isVisualSpinning
-                  ? "SPINNING..."
-                  : "SPIN THE WHEEL!"}
-              </button>
-            )}
+              {/* Show spin button if Host and session not locked/completed */}
+              {isHost &&
+                activeSessionId !== null &&
+                !sessionIsLocked &&
+                !sessionCompleted && (
+                  <button
+                    onClick={handleSpin}
+                    disabled={
+                      participantsList.length < 2 ||
+                      lockAndSelectPayerPending ||
+                      isVisualSpinning
+                    }
+                    className="px-10 py-4 bg-red-600 text-white rounded-full font-black text-xl hover:bg-red-700 disabled:bg-gray-400 transition-all shadow-[0_0_20px_rgba(220,38,38,0.5)] hover:shadow-[0_0_30px_rgba(220,38,38,0.8)] disabled:shadow-none hover:scale-105"
+                  >
+                    {lockAndSelectPayerPending || isVisualSpinning
+                      ? "SPINNING..."
+                      : "SPIN THE WHEEL!"}
+                  </button>
+                )}
 
-          {/* Show waiting message if not host and session not locked/completed */}
-          {!isHost &&
-            activeSessionId !== null &&
-            !sessionIsLocked &&
-            !sessionCompleted &&
-            participantsList.length >= 2 && (
-              <p className="text-gray-500 font-medium animate-pulse">
-                Waiting for host to spin...
-              </p>
-            )}
-
-          {/* Show results if winner is selected and visual spin has completed */}
-          {(winner || sessionCompleted) && !isVisualSpinning && activeSessionId !== null && (
-            <div
-              id="result-modal"
-              className={`glass-card text-center p-8 rounded-[2.5rem] w-full max-w-sm border-2 ${
-                winner?.toLowerCase() === address?.toLowerCase()
-                  ? "border-red-500/50 shadow-[0_0_50px_rgba(239,68,68,0.2)]"
-                  : "border-green-500/50 shadow-[0_0_50px_rgba(34,197,94,0.2)]"
-              }`}
-            >
-              {winner?.toLowerCase() === address?.toLowerCase() ? (
-                <>
-                  <h3 className="text-red-400 font-black text-3xl mb-4 tracking-tighter">
-                    {sessionCompleted ? "TAB SETTLED" : "YOU'RE IT!"}
-                  </h3>
-                  <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Zap className="w-10 h-10 text-red-500" />
-                  </div>
-                  <p className="text-gray-300 font-bold mb-8 leading-relaxed">
-                    {sessionCompleted
-                      ? "Your contribution has been recorded. Respect! 🫡"
-                      : "The wheel has spoken. It's your turn to be the hero of the group."}
+              {/* Show waiting message if not host and session not locked/completed */}
+              {!isHost &&
+                activeSessionId !== null &&
+                !sessionIsLocked &&
+                !sessionCompleted &&
+                participantsList.length >= 2 && (
+                  <p className="text-gray-500 font-medium animate-pulse">
+                    Waiting for host to spin...
                   </p>
-                  {isConnected && !sessionCompleted && (
-                    <div className="space-y-4">
-                      <button
-                        onClick={async () => {
-                          if (!sessionDetails || activeSessionId === null)
-                            return;
-                          try {
-                            const amountInUnits = (sessionDetails as any)[0];
-                            const amountInCelo = formatEther(amountInUnits);
-                            
-                            let tx;
-                            if (paymentToken === "CELO") {
-                               tx = await completePayment(activeSessionId, amountInCelo);
-                            } else {
-                               tx = await completePaymentWithToken(activeSessionId, USDC_ADDRESS);
-                            }
+                )}
 
-                            console.log("Payment sent! Hash:", tx);
-                            setTxHash(tx);
-                            setShowBadgeAfterPayment(true);
-                            setTimeout(() => refetchSessionDetails(), 5000);
-
-                            supabase.channel(`lobby-${activeSessionId}`).send({
-                              type: "broadcast",
-                              event: "payment_completed",
-                              payload: {
-                                payer: address,
-                                amount: amountInCelo,
-                                token: paymentToken,
-                                name: playerNamesMap[address!.toLowerCase()] || address,
-                              },
-                            });
-                          } catch (e) {
-                             console.error("Payment failed:", e);
-                             toast.error("Payment failed. Make sure you have enough funds!");
-                          }
-                        }}
-                        disabled={completePaymentPending || completePaymentWithTokenPending}
-                        className="w-full py-5 bg-linear-to-r from-red-600 to-orange-600 text-white rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
-                      >
-                        {completePaymentPending || completePaymentWithTokenPending ? (
-                          "Processing..."
-                        ) : (
-                          `Settle ${amount} ${paymentToken}`
-                        )}
-                      </button>
-                      {txHash && (
-                        <a 
-                          href={`https://celoscan.io/tx/${txHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block text-[10px] font-bold text-blue-400 hover:underline uppercase tracking-widest mt-2"
-                        >
-                          View Real Transaction on Explorer ↗
-                        </a>
-                      )}
-                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-2">
-                         MiniPay Fee: Sub-Cent
+              {/* Show results if winner is selected and visual spin has completed */}
+              {(winner || sessionCompleted) && !isVisualSpinning && activeSessionId !== null && (
+                <div
+                  id="result-modal"
+                  className={`glass-card text-center p-8 rounded-[2.5rem] w-full max-w-sm border-2 ${
+                    winner?.toLowerCase() === address?.toLowerCase()
+                      ? "border-red-500/50 shadow-[0_0_50px_rgba(239,68,68,0.2)]"
+                      : "border-green-500/50 shadow-[0_0_50px_rgba(34,197,94,0.2)]"
+                  }`}
+                >
+                  {winner?.toLowerCase() === address?.toLowerCase() ? (
+                    <>
+                      <h3 className="text-red-400 font-black text-3xl mb-4 tracking-tighter">
+                        {sessionCompleted ? "TAB SETTLED" : "YOU'RE IT!"}
+                      </h3>
+                      <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Zap className="w-10 h-10 text-red-500" />
+                      </div>
+                      <p className="text-gray-300 font-bold mb-8 leading-relaxed">
+                        {sessionCompleted
+                          ? "Your contribution has been recorded. Respect! 🫡"
+                          : "The wheel has spoken. It's your turn to be the hero of the group."}
                       </p>
-                    </div>
+                      {isConnected && !sessionCompleted && (
+                        <div className="space-y-4">
+                          <button
+                            onClick={async () => {
+                              if (!sessionDetails || activeSessionId === null)
+                                return;
+                              try {
+                                const amountInUnits = (sessionDetails as any)[0];
+                                const amountInCelo = formatEther(amountInUnits);
+                                
+                                let tx;
+                                if (paymentToken === "CELO") {
+                                   tx = await completePayment(activeSessionId, amountInCelo);
+                                } else {
+                                   tx = await completePaymentWithToken(activeSessionId, USDC_ADDRESS);
+                                }
+
+                                console.log("Payment sent! Hash:", tx);
+                                setTxHash(tx);
+                                setShowBadgeAfterPayment(true);
+                                setTimeout(() => refetchSessionDetails(), 5000);
+
+                                supabase.channel(`lobby-${activeSessionId}`).send({
+                                  type: "broadcast",
+                                  event: "payment_completed",
+                                  payload: {
+                                    payer: address,
+                                    amount: amountInCelo,
+                                    token: paymentToken,
+                                    name: playerNamesMap[address!.toLowerCase()] || address,
+                                  },
+                                });
+                              } catch (e) {
+                                 console.error("Payment failed:", e);
+                                 toast.error("Payment failed. Make sure you have enough funds!");
+                              }
+                            }}
+                            disabled={completePaymentPending || completePaymentWithTokenPending}
+                            className="w-full py-5 bg-linear-to-r from-red-600 to-orange-600 text-white rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                          >
+                            {completePaymentPending || completePaymentWithTokenPending ? (
+                              "Processing..."
+                            ) : (
+                              `Settle ${amount} ${paymentToken}`
+                            )}
+                          </button>
+                          {txHash && (
+                            <a 
+                              href={`https://celoscan.io/tx/${txHash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block text-[10px] font-bold text-blue-400 hover:underline uppercase tracking-widest mt-2"
+                            >
+                              View Real Transaction on Explorer ↗
+                            </a>
+                          )}
+                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-2">
+                             MiniPay Fee: Sub-Cent
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-green-400 font-black text-3xl mb-4 tracking-tighter uppercase italic">
+                        {sessionCompleted ? "SETTLED" : "SAFE!"}
+                      </h3>
+                      <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Smile className="w-10 h-10 text-green-500" />
+                      </div>
+                      <p className="text-gray-300 font-bold mb-8">
+                        <span className="text-white px-2 py-1 rounded bg-white/5 border border-white/10">
+                          {winner
+                            ? playerNamesMap[winner.toLowerCase()] ||
+                              `${winner.slice(0, 6)}...`
+                            : "Unknown"}
+                        </span>{" "}
+                        {sessionCompleted
+                          ? "has paid the bill. Legend."
+                          : "is footing the bill today!"}
+                      </p>
+                      <div className="flex gap-4 justify-center">
+                        {["🤡", "😂", "🔥", "💸"].map((emoji) => (
+                          <button
+                            key={emoji}
+                            onClick={() => sendReaction(emoji)}
+                            className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 hover:scale-110 active:scale-95 transition-all text-xl"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </>
                   )}
-                </>
-              ) : (
-                <>
-                  <h3 className="text-green-400 font-black text-3xl mb-4 tracking-tighter uppercase italic">
-                    {sessionCompleted ? "SETTLED" : "SAFE!"}
-                  </h3>
-                  <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Smile className="w-10 h-10 text-green-500" />
-                  </div>
-                  <p className="text-gray-300 font-bold mb-8">
-                    <span className="text-white px-2 py-1 rounded bg-white/5 border border-white/10">
-                      {winner
-                        ? playerNamesMap[winner.toLowerCase()] ||
-                          `${winner.slice(0, 6)}...`
-                        : "Unknown"}
-                    </span>{" "}
-                    {sessionCompleted
-                      ? "has paid the bill. Legend."
-                      : "is footing the bill today!"}
-                  </p>
-                  <div className="flex gap-4 justify-center">
-                    {["🤡", "😂", "🔥", "💸"].map((emoji) => (
-                      <button
-                        key={emoji}
-                        onClick={() => sendReaction(emoji)}
-                        className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 hover:scale-110 active:scale-95 transition-all text-xl"
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
-                </>
+                </div>
               )}
-            </div>
-            )}
-          </section>
-        )}
+            </section>
+          )}
+        </div>
       </div>
-    </main>
+    </div>
+  </main>
   );
 }
