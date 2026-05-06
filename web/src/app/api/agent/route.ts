@@ -55,8 +55,8 @@ const AGENT_CARD = {
     "provide-fair-score",
   ],
   endpoints: {
-    a2a: "https://whopays.vercel.app/api/agent",
-    health: "https://whopays.vercel.app/api/agent/health",
+    a2a: "https://whopays-five.vercel.app/api/agent",
+    health: "https://whopays-five.vercel.app/api/agent",
   },
   trustModel: "self-agent-id",
   supportedAssets: ["CELO", "cUSD", "cEUR"],

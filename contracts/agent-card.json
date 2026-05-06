@@ -11,8 +11,8 @@
     "auto-settle-payment"
   ],
   "endpoints": {
-    "a2a": "https://whopays.vercel.app/api/agent",
-    "health": "https://whopays.vercel.app/api/agent"
+    "a2a": "https://whopays-five.vercel.app/api/agent",
+    "health": "https://whopays-five.vercel.app/api/agent"
   },
   "chain": "celo",
   "chainId": 42220,
