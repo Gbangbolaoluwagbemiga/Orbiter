@@ -17,8 +17,8 @@
     "4. Complete Self Protocol verification: https://self.xyz",
     "5. Call recordSelfVerification('YOUR_SELF_AGENT_ID') on the contract"
   ],
-  "agentCardCID": "bafkreihqxkcfouv5n45da7ozyqapxipuiiqwihrvylsbpwxpijbwtw6k5u",
-  "agentCardURI": "ipfs://bafkreihqxkcfouv5n45da7ozyqapxipuiiqwihrvylsbpwxpijbwtw6k5u",
+  "agentCardCID": "bafkreiapi53mpdr4er4cpdjkmwfefm3f4rtfiv632cmyvmk4toeabtvrum",
+  "agentCardURI": "ipfs://bafkreiapi53mpdr4er4cpdjkmwfefm3f4rtfiv632cmyvmk4toeabtvrum",
   "agentCardUpdateTx": "0x9c821069540038acb00f704bcf94a78e112147355c9734b46b048dce57cb7493",
   "vercelUrl": "https://whopays-five.vercel.app",
   "agentEndpoint": "https://whopays-five.vercel.app/api/agent",
