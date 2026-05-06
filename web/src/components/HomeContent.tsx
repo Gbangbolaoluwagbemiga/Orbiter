@@ -13,7 +13,9 @@ import {
   Link as LinkIcon,
   LogIn,
   Bot,
-  LayoutDashboard
+  LayoutDashboard,
+  Menu,
+  X
 } from "lucide-react";
 import { useAccount, useReadContract, useBalance, useConnect } from "wagmi";
 import { formatUnits, formatEther } from "viem";
@@ -39,6 +41,7 @@ export default function HomeContent() {
   const USDC_ADDRESS = "0xcebA9300f24863e411085441E0c089ccB8CE96Be";
   const [activeTab, setActiveTab] = useState<'lobby' | 'agent'>('lobby');
   const [mobileView, setMobileView] = useState<'lobby' | 'wheel'>('lobby');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Custom Names state (Stored locally and pulled from URL for the host)
   const [playerName, setPlayerName] = useState("");
@@ -72,21 +75,7 @@ export default function HomeContent() {
   }, [isConnected, connect]);
 
   useEffect(() => {
-    if (isConnected && address) {
-      console.log("--- WAGMI WALLET CONNECTION ---");
-      console.log("Address:", address);
-      console.log("Chain:", chain?.name, "ID:", chain?.id);
-      if (balanceData) {
-        console.log(
-          "Balance:",
-          formatUnits(balanceData.value, balanceData.decimals),
-          balanceData.symbol,
-        );
-      } else {
-        console.log("Balance Data is empty or loading.");
-      }
-      console.log("-------------------------------");
-    }
+    // Re-check balances when connection changes
   }, [isConnected, address, chain, balanceData]);
 
   const {
@@ -152,8 +141,6 @@ export default function HomeContent() {
       ? ((sessionDetails as any)[2] as string)
       : null;
 
-  console.log("Current Session Details:", sessionDetails);
-  console.log("sessionIsLocked:", sessionIsLocked);
 
   const isHost =
     participantsList.length > 0 &&
@@ -166,7 +153,6 @@ export default function HomeContent() {
   // Set winner if selected
   useEffect(() => {
     if (sessionWinner && sessionWinner !== winner) {
-      console.log("Setting winner from contract state:", sessionWinner);
       setWinner(sessionWinner);
       setMobileView('wheel'); // Force wheel view on mobile when winner is picked
     }
@@ -255,7 +241,6 @@ export default function HomeContent() {
           filter: `id=eq.${activeSessionId}`,
         },
         (payload) => {
-          console.log("DB Update received:", payload.new);
           // 1. Only update lobby name if we are NOT the host address (source of truth)
           const dbHost = payload.new.host_address;
           if (payload.new.name !== undefined && payload.new.name !== lobbyName && address?.toLowerCase() !== dbHost?.toLowerCase()) {
@@ -397,7 +382,6 @@ export default function HomeContent() {
 
       if (joinId !== null) {
         const id = Number(joinId);
-        console.log("JOIN LOBBY DETECTED:", id);
         setActiveSessionId(id);
 
         const namesParam = urlParams.get("names");
@@ -441,7 +425,6 @@ export default function HomeContent() {
     setIsCreatingLobby(true);
     try {
       const tx = await createLobby(amount, merchant);
-      console.log("Transaction hash:", tx);
 
       // Wait a moment for the transaction to be mined
       await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -484,12 +467,6 @@ export default function HomeContent() {
   };
 
   const handleJoinSession = async () => {
-    console.log(
-      "Join button clicked. isConnected:",
-      isConnected,
-      "activeSessionId:",
-      activeSessionId,
-    );
 
     if (!isConnected) {
       console.warn("Wallet not connected");
@@ -500,14 +477,9 @@ export default function HomeContent() {
       return;
     }
 
-    console.log(
-      "Executing join session transaction for session",
-      activeSessionId,
-    );
 
     try {
       const tx = await joinSession(activeSessionId);
-      console.log("Join session transaction sent. TX Hash:", tx);
 
       if (playerName && address) {
         const myName = { [address.toLowerCase()]: playerName };
@@ -524,7 +496,6 @@ export default function HomeContent() {
       await new Promise((resolve) => setTimeout(resolve, 4000));
 
       // Force a participant refetch
-      console.log("Refetching participants list...");
       refetchParticipants();
     } catch (error) {
       console.error("Failed to join session. Error details:", error);
@@ -535,12 +506,8 @@ export default function HomeContent() {
     if (activeSessionId === null || isVisualSpinning) return;
 
     try {
-      console.log(
-        "Triggering lockAndSelectPayer for session:",
-        activeSessionId,
-      );
+
       const tx = await lockAndSelectPayer(activeSessionId);
-      console.log("lockAndSelectPayer transaction signed! Hash:", tx);
       
       setIsVisualSpinning(true); // Start visual spin ONLY after signing
       setMobileView('wheel'); // Switch to wheel on mobile
@@ -549,7 +516,6 @@ export default function HomeContent() {
       // Wait for it to mine
       await new Promise((resolve) => setTimeout(resolve, 4000));
 
-      console.log("Refetching session details...");
       refetchSessionDetails();
     } catch (error) {
       console.error("Failed to select payer. Error details:", error);
@@ -608,30 +574,84 @@ export default function HomeContent() {
             </span>
           </h1>
         </a>
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 relative">
+          <div className="hidden sm:flex items-center gap-3 sm:gap-4">
+            <a
+              href="/analytics"
+              className="text-xs font-black text-gray-400 hover:text-white transition-colors uppercase tracking-widest"
+            >
+              Stats
+            </a>
+            <a
+              href="/profile"
+              className="text-xs font-black text-purple-400 hover:text-purple-300 transition-colors uppercase tracking-widest bg-purple-500/10 px-3 py-1.5 rounded-lg border border-purple-500/20"
+            >
+              Profile
+            </a>
+            {!isMiniPay && (
+              <div className="connect-button-wrapper scale-90 sm:scale-100">
+                <ConnectButton
+                  showBalance={false}
+                  accountStatus="address"
+                  chainStatus="none"
+                />
+              </div>
+            )}
+          </div>
+          
+          {/* Mobile Hamburger Menu Toggle */}
+          <button 
+            className="sm:hidden p-2.5 text-gray-400 hover:text-white bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-95 transition-all"
+            onClick={() => setIsMobileMenuOpen(true)}
+          >
+            <Menu size={22} />
+          </button>
+        </div>
+      </header>
+
+      {/* ── Sleek Mobile Full-Screen Menu Overlay ── */}
+      <div 
+        className={`fixed inset-0 z-[100] bg-[#0a0a0c]/95 backdrop-blur-2xl transition-all duration-500 sm:hidden flex flex-col pt-28 px-6 ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+      >
+        <button 
+          className="absolute top-6 right-6 p-3 text-gray-400 hover:text-white bg-white/5 rounded-full border border-white/10 shadow-lg active:scale-90 transition-all hover:rotate-90 duration-300"
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          <X size={24} />
+        </button>
+
+        <div className={`flex flex-col gap-6 w-full max-w-sm mx-auto transition-all duration-500 delay-100 ${isMobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <span className="text-4xl drop-shadow-lg">💸</span>
+            <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-purple-200 tracking-tighter">
+              WhoPays
+            </h2>
+          </div>
+
           <a
             href="/analytics"
-            className="hidden sm:block text-xs font-black text-gray-400 hover:text-white transition-colors uppercase tracking-widest"
+            className="w-full text-center py-5 text-xl font-black text-gray-300 hover:text-white bg-white/5 rounded-2xl transition-all uppercase tracking-widest border border-white/10 active:scale-95 shadow-lg"
           >
-            Stats
+            Stats & Leaderboard
           </a>
           <a
             href="/profile"
-            className="hidden sm:block text-xs font-black text-purple-400 hover:text-purple-300 transition-colors uppercase tracking-widest bg-purple-500/10 px-3 py-1.5 rounded-lg border border-purple-500/20"
+            className="w-full text-center py-5 text-xl font-black text-purple-400 hover:text-purple-300 bg-purple-500/10 rounded-2xl transition-all uppercase tracking-widest border border-purple-500/30 shadow-[0_0_40px_rgba(168,85,247,0.2)] active:scale-95"
           >
-            Profile
+            Your Profile
           </a>
+          
           {!isMiniPay && (
-            <div className="connect-button-wrapper scale-90 sm:scale-100">
+            <div className="mt-10 flex justify-center transform scale-110">
               <ConnectButton
                 showBalance={false}
                 accountStatus="address"
-                chainStatus="none"
+                chainStatus="icon"
               />
             </div>
           )}
         </div>
-      </header>
+      </div>
 
       {/* ── Sleek Navigation Tabs (Only shown when Lobby is active) ── */}
       {activeSessionId !== null && (
@@ -1036,7 +1056,6 @@ export default function HomeContent() {
                                    tx = await completePaymentWithToken(activeSessionId, USDC_ADDRESS);
                                 }
 
-                                console.log("Payment sent! Hash:", tx);
                                 setTxHash(tx);
                                 setShowBadgeAfterPayment(true);
                                 setTimeout(() => refetchSessionDetails(), 5000);

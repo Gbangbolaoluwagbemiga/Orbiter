@@ -142,7 +142,6 @@ export function usePayeerContract() {
   };
 
   const joinSession = async (sessionId: number) => {
-    console.log("Preparing contract call for joinSession with ID:", sessionId);
     try {
       const tx = await writeJoinSession({
         address: CONTRACT_ADDRESS as `0x${string}`,
@@ -150,7 +149,6 @@ export function usePayeerContract() {
         functionName: "joinSession",
         args: [BigInt(sessionId)],
       });
-      console.log("Contract call success. Hash:", tx);
       return tx;
     } catch (e) {
       console.error("Contract call failed at Wagmi layer:", e);
@@ -159,10 +157,6 @@ export function usePayeerContract() {
   };
 
   const lockAndSelectPayer = async (sessionId: number) => {
-    console.log(
-      "Preparing contract call for lockAndSelectPayer with ID:",
-      sessionId,
-    );
     try {
       const tx = await writeLockAndSelectPayer({
         address: CONTRACT_ADDRESS as `0x${string}`,
@@ -170,7 +164,6 @@ export function usePayeerContract() {
         functionName: "lockAndSelectPayer",
         args: [BigInt(sessionId)],
       });
-      console.log("Contract call success. Hash:", tx);
       return tx;
     } catch (e) {
       console.error(
