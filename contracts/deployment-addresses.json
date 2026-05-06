@@ -16,5 +16,12 @@
     "3. Register at 8004scan.io: https://8004scan.io",
     "4. Complete Self Protocol verification: https://self.xyz",
     "5. Call recordSelfVerification('YOUR_SELF_AGENT_ID') on the contract"
-  ]
+  ],
+  "agentCardCID": "bafkreihqxkcfouv5n45da7ozyqapxipuiiqwihrvylsbpwxpijbwtw6k5u",
+  "agentCardURI": "ipfs://bafkreihqxkcfouv5n45da7ozyqapxipuiiqwihrvylsbpwxpijbwtw6k5u",
+  "agentCardUpdateTx": "0x9c821069540038acb00f704bcf94a78e112147355c9734b46b048dce57cb7493",
+  "vercelUrl": "https://whopays-five.vercel.app",
+  "agentEndpoint": "https://whopays-five.vercel.app/api/agent",
+  "erc8004AgentId": "9047",
+  "erc8004ProfileUrl": "https://8004scan.io/agents/9047"
 }
