@@ -27,7 +27,7 @@ import { supabase } from "@/utils/supabase";
 import { Send, Smile } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { AgentPanel } from "@/components/AgentPanel";
-import { SelfVerifyBadge } from "@/components/SelfVerifyBadge";
+
 export default function HomeContent() {
   const [winner, setWinner] = useState<string | null>(null);
   const [amount, setAmount] = useState("0.01");
@@ -1141,7 +1141,7 @@ export default function HomeContent() {
         {/* AGENT TAB CONTENT */}
         {activeSessionId !== null && (
           <div className={`w-full max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-500 ${activeTab === 'agent' ? 'block' : 'hidden'}`}>
-            <SelfVerifyBadge verified={false} compact={false} />
+
             <AgentPanel
               participants={participantsList}
               sessionId={activeSessionId}
