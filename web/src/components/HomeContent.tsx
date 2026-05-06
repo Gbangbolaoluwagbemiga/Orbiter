@@ -38,6 +38,7 @@ export default function HomeContent() {
   const [txHash, setTxHash] = useState<string | null>(null);
   const USDC_ADDRESS = "0xcebA9300f24863e411085441E0c089ccB8CE96Be";
   const [activeTab, setActiveTab] = useState<'lobby' | 'agent'>('lobby');
+  const [mobileView, setMobileView] = useState<'lobby' | 'wheel'>('lobby');
 
   // Custom Names state (Stored locally and pulled from URL for the host)
   const [playerName, setPlayerName] = useState("");
@@ -167,6 +168,7 @@ export default function HomeContent() {
     if (sessionWinner && sessionWinner !== winner) {
       console.log("Setting winner from contract state:", sessionWinner);
       setWinner(sessionWinner);
+      setMobileView('wheel'); // Force wheel view on mobile when winner is picked
     }
   }, [sessionWinner, winner]);
 
@@ -222,6 +224,7 @@ export default function HomeContent() {
       })
       .on('broadcast', { event: 'spin_started' }, () => {
         setIsVisualSpinning(true);
+        setMobileView('wheel'); // Switch to wheel view on mobile
       })
       .on('broadcast', { event: 'spin_ended' }, () => {
         setIsVisualSpinning(false);
@@ -540,6 +543,7 @@ export default function HomeContent() {
       console.log("lockAndSelectPayer transaction signed! Hash:", tx);
       
       setIsVisualSpinning(true); // Start visual spin ONLY after signing
+      setMobileView('wheel'); // Switch to wheel on mobile
       supabase.channel(`lobby-${activeSessionId}`).send({ type: 'broadcast', event: 'spin_started' });
 
       // Wait for it to mine
@@ -611,6 +615,12 @@ export default function HomeContent() {
           >
             Stats
           </a>
+          <a
+            href="/profile"
+            className="hidden sm:block text-xs font-black text-purple-400 hover:text-purple-300 transition-colors uppercase tracking-widest bg-purple-500/10 px-3 py-1.5 rounded-lg border border-purple-500/20"
+          >
+            Profile
+          </a>
           {!isMiniPay && (
             <div className="connect-button-wrapper scale-90 sm:scale-100">
               <ConnectButton
@@ -643,10 +653,28 @@ export default function HomeContent() {
 
       <div className={`w-full transition-all duration-500 flex flex-col items-center ${activeSessionId === null ? 'max-w-md' : 'max-w-5xl'}`}>
         
+        {/* MOBILE LOBBY/WHEEL TOGGLE */}
+        {activeSessionId !== null && activeTab === 'lobby' && (
+          <div className="lg:hidden w-[90%] max-w-sm mx-auto mb-6 bg-white/5 p-1 rounded-2xl flex border border-white/10 shadow-lg">
+             <button
+                onClick={() => setMobileView('lobby')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${mobileView === 'lobby' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-gray-500 hover:text-gray-300'}`}
+             >
+               <Users className="w-3.5 h-3.5" /> Chat & Squad
+             </button>
+             <button
+                onClick={() => setMobileView('wheel')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${mobileView === 'wheel' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'text-gray-500 hover:text-gray-300'}`}
+             >
+               <Zap className="w-3.5 h-3.5" /> The Wheel
+             </button>
+          </div>
+        )}
+
         {/* LOBBY TAB CONTENT */}
         <div className={`w-full ${activeSessionId === null ? '' : (activeTab === 'lobby' ? 'grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 animate-in fade-in zoom-in-95 duration-500' : 'hidden')}`}>
-          {/* On Mobile, we reverse order to show Spinner at top if active */}
-          <div className={`${activeSessionId !== null ? 'order-2 lg:order-1' : ''} space-y-6 w-full`}>
+          {/* On Mobile, toggle visibility based on mobileView state */}
+          <div className={`${activeSessionId !== null ? `order-2 lg:order-1 ${mobileView === 'lobby' ? 'block' : 'hidden lg:block'}` : ''} space-y-6 w-full`}>
             {/* Left Column Content */}
           {/* Create Lobby Card (Hidden if already in a session) */}
           {activeSessionId === null ? (
@@ -901,33 +929,17 @@ export default function HomeContent() {
             </div>
           )}
 
-          {/* Add Badge Display for the connected user */}
+          {/* Add Badge Display for the connected user ONLY if they just paid */}
           {showBadgeAfterPayment && (
-            <div className="flex flex-col items-center">
-              <button
-                onClick={() => setShowBadgeAfterPayment(false)}
-                className="mb-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                Hide Badge
-              </button>
+            <div className="flex flex-col items-center animate-in zoom-in duration-500">
               <BadgeDisplay address={address} />
-            </div>
-          )}
-          {!showBadgeAfterPayment && address && (
-            <div className="mt-8 text-center">
-              <button
-                onClick={() => setShowBadgeAfterPayment(true)}
-                className="text-sm text-blue-600 hover:text-blue-800 transition-colors font-medium"
-              >
-                Show Your Honor Badge
-              </button>
             </div>
           )}
           </div> {/* <--- THIS CLOSES THE LEFT COLUMN CONTENT */}
           
-          {/* Right Column: The Spinner (Hidden until Lobby is created, Moves to TOP on mobile) */}
+          {/* Right Column: The Spinner (Hidden on mobile if mobileView is not wheel) */}
           {activeSessionId !== null && (
-            <section className="order-1 lg:order-2 flex flex-col items-center justify-center space-y-6 sm:space-y-8 relative py-4">
+            <section className={`order-1 lg:order-2 flex flex-col items-center justify-center space-y-6 sm:space-y-8 relative py-4 ${mobileView === 'wheel' ? 'flex' : 'hidden lg:flex'}`}>
               {/* Reaction Overlay */}
               <div className="absolute inset-0 pointer-events-none z-50">
                 {recentReactions.map((r) => (
