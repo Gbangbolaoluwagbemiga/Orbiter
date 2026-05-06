@@ -10,6 +10,23 @@
     "check-badge-status",
     "auto-settle-payment"
   ],
+  "services": [
+    {
+      "id": "whopays-a2a",
+      "type": "a2a",
+      "name": "WhoPays PayBot A2A Service",
+      "url": "https://whopays-five.vercel.app/api/agent",
+      "skills": [
+        "payment-recommendation",
+        "fairness-analysis",
+        "on-chain-analytics",
+        "bill-splitting",
+        "session-management",
+        "badge-verification"
+      ],
+      "description": "Agent-to-Agent endpoint for bill-splitting intelligence on Celo MiniPay"
+    }
+  ],
   "endpoints": {
     "a2a": "https://whopays-five.vercel.app/api/agent",
     "health": "https://whopays-five.vercel.app/api/agent"
@@ -17,8 +34,6 @@
   "chain": "celo",
   "chainId": 42220,
   "contractAddress": "0x9d5908C4B3BbA764F21b87e8cA46B47D33F2C322",
-  "agentCardCID": "bafkreihqxkcfouv5n45da7ozyqapxipuiiqwihrvylsbpwxpijbwtw6k5u",
-  "agentCardURI": "ipfs://bafkreihqxkcfouv5n45da7ozyqapxipuiiqwihrvylsbpwxpijbwtw6k5u",
   "erc8004Compliant": true,
   "trustModel": "self-agent-id",
   "selfAgentId": "REPLACE_AFTER_SELF_VERIFICATION",
@@ -32,5 +47,3 @@
     "payerBadge": "0x956D4eeF22377d83D5cc31E0951a4591F08aECEC"
   }
 }
-
-

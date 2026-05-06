@@ -52,8 +52,6 @@ export default {
         ? [`0x${process.env.PRIVATE_KEY.replace(/^0x/, "")}`]
         : [],
       timeout: 120000,
-      // Cap gas units to prevent 15x over-estimation; let gasPrice be auto-detected
-      gas: 500000,
       gasPrice: "auto",
     },
   },
