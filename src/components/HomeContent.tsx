@@ -5,8 +5,6 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Spinner } from "@/components/Spinner";
 import { MiniPayLink } from "@/components/MiniPayLink";
 import {
-  Plus,
-  Trash2,
   CreditCard,
   Users,
   Zap,
@@ -19,8 +17,10 @@ import { usePayeerContract } from "@/hooks/usePayeerContract";
 import { QRCodeSVG } from "qrcode.react";
 import { BadgeDisplay } from "@/components/BadgeDisplay";
 import { supabase } from "@/utils/supabase";
-import { Send, Smile } from "lucide-react";
+import { Send } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
+import { AgentPanel } from "@/components/AgentPanel";
+import { SelfVerifyBadge } from "@/components/SelfVerifyBadge";
 export default function HomeContent() {
   const [winner, setWinner] = useState<string | null>(null);
   const [amount, setAmount] = useState("0.01");
@@ -951,6 +951,29 @@ export default function HomeContent() {
           )}
         </section>
       </div>
+
+      {/* ── PayBot AI Agent Panel ───────────────────────────────────────── */}
+      {activeSessionId !== null && (
+        <section className="w-full mt-8 space-y-4">
+          {/* Self Protocol verification badge */}
+          <div className="max-w-4xl mx-auto">
+            <SelfVerifyBadge
+              verified={false}
+              compact={false}
+            />
+          </div>
+
+          {/* PayBot AI Panel */}
+          <div className="max-w-4xl mx-auto">
+            <AgentPanel
+              participants={participantsList}
+              sessionId={activeSessionId}
+              amount={amount}
+              playerNamesMap={playerNamesMap}
+            />
+          </div>
+        </section>
+      )}
     </main>
   );
 }

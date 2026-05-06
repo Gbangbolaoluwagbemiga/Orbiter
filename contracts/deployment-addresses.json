@@ -4,5 +4,17 @@
   "payeer": "0x5fA80497E70506E3CB8a2e32b838782aF31E005A",
   "payerBadge": "0x956D4eeF22377d83D5cc31E0951a4591F08aECEC",
   "deployer": "0x3Be7fbBDbC73Fc4731D60EF09c4BA1A94DC58E41",
-  "deploymentTime": "2026-04-21T13:58:03.496Z"
+  "deploymentTime": "2026-05-06T14:19:35.956Z",
+  "whoPaysAgent": "0x9d5908C4B3BbA764F21b87e8cA46B47D33F2C322",
+  "agentWallet": "0x3Be7fbBDbC73Fc4731D60EF09c4BA1A94DC58E41",
+  "registrationTx": "0xc98248bd930a384e1f71568fa7f95ee5d75258c14bcab51bbf04195b1ff1d143",
+  "firstActionTx": "0xd6ca355c98e1a7843857e4d33ba116b3284fcbaafc6c4d6107fe330abd77e1e7",
+  "erc8004Compliant": true,
+  "nextSteps": [
+    "1. Upload agent-card.json to Pinata → get IPFS CID",
+    "2. Call updateAgentCard('ipfs://YOUR_CID') on the deployed contract",
+    "3. Register at 8004scan.io: https://8004scan.io",
+    "4. Complete Self Protocol verification: https://self.xyz",
+    "5. Call recordSelfVerification('YOUR_SELF_AGENT_ID') on the contract"
+  ]
 }

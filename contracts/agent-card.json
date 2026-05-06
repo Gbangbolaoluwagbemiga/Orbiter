@@ -1,0 +1,34 @@
+{
+  "name": "WhoPays PayBot",
+  "version": "1.0.0",
+  "type": "payment-agent",
+  "description": "WhoPays AI Agent - autonomously manages group bill sessions on Celo MiniPay. Analyzes on-chain payment history, recommends fair payer selection, and supports auto-settlement for opted-in users.",
+  "capabilities": [
+    "analyze-payment-history",
+    "recommend-payer",
+    "get-session-details",
+    "check-badge-status",
+    "auto-settle-payment"
+  ],
+  "endpoints": {
+    "a2a": "https://whopays.vercel.app/api/agent",
+    "health": "https://whopays.vercel.app/api/agent"
+  },
+  "chain": "celo",
+  "chainId": 42220,
+  "contractAddress": "0x9d5908C4B3BbA764F21b87e8cA46B47D33F2C322",
+  "erc8004Compliant": true,
+  "trustModel": "self-agent-id",
+  "selfAgentId": "REPLACE_AFTER_SELF_VERIFICATION",
+  "supportedAssets": [
+    "CELO",
+    "cUSD",
+    "cEUR"
+  ],
+  "relatedContracts": {
+    "payeer": "0x5fA80497E70506E3CB8a2e32b838782aF31E005A",
+    "payerBadge": "0x956D4eeF22377d83D5cc31E0951a4591F08aECEC"
+  }
+}
+
+

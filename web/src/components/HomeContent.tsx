@@ -22,6 +22,8 @@ import { BadgeDisplay } from "@/components/BadgeDisplay";
 import { supabase } from "@/utils/supabase";
 import { Send, Smile } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
+import { AgentPanel } from "@/components/AgentPanel";
+import { SelfVerifyBadge } from "@/components/SelfVerifyBadge";
 export default function HomeContent() {
   const [winner, setWinner] = useState<string | null>(null);
   const [amount, setAmount] = useState("0.01");
@@ -1080,7 +1082,20 @@ export default function HomeContent() {
           )}
         </div>
       </div>
-    </div>
-  </main>
+      </div>
+
+      {/* ── PayBot AI Agent Panel (ERC-8004) ─────────────────────────────── */}
+      {activeSessionId !== null && (
+        <div className="w-full max-w-5xl mt-6 space-y-4">
+          <SelfVerifyBadge verified={false} compact={false} />
+          <AgentPanel
+            participants={participantsList}
+            sessionId={activeSessionId}
+            amount={amount}
+            playerNamesMap={playerNamesMap}
+          />
+        </div>
+      )}
+    </main>
   );
 }
