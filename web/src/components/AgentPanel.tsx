@@ -204,7 +204,7 @@ export function AgentPanel({ participants, sessionId, amount, playerNamesMap }: 
   };
 
   return (
-    <div className="paybot-panel w-full rounded-2xl overflow-hidden border border-purple-500/30 bg-gradient-to-b from-gray-900 via-purple-950/20 to-gray-900 shadow-2xl shadow-purple-900/20">
+    <div className="paybot-panel w-full rounded-[2.5rem] sm:rounded-[3rem] overflow-hidden border border-purple-500/30 bg-gradient-to-b from-gray-900 via-purple-950/20 to-gray-900 shadow-[0_0_60px_rgba(139,92,246,0.15)] transition-all duration-300">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-900/60 to-blue-900/40 border-b border-purple-500/20">
         <div className="flex items-center gap-2">

@@ -12,6 +12,8 @@ import {
   Zap,
   Link as LinkIcon,
   LogIn,
+  Bot,
+  LayoutDashboard
 } from "lucide-react";
 import { useAccount, useReadContract, useBalance, useConnect } from "wagmi";
 import { formatUnits, formatEther } from "viem";
@@ -35,6 +37,7 @@ export default function HomeContent() {
   const [paymentToken, setPaymentToken] = useState("CELO"); // "CELO" or "USDC"
   const [txHash, setTxHash] = useState<string | null>(null);
   const USDC_ADDRESS = "0xcebA9300f24863e411085441E0c089ccB8CE96Be";
+  const [activeTab, setActiveTab] = useState<'lobby' | 'agent'>('lobby');
 
   // Custom Names state (Stored locally and pulled from URL for the host)
   const [playerName, setPlayerName] = useState("");
@@ -589,12 +592,12 @@ export default function HomeContent() {
       <header className={`w-full max-w-5xl flex justify-between items-center mb-8 sm:mb-12 ${activeSessionId === null ? "fixed top-0 p-4 sm:p-8" : ""}`}>
         <a
           href="/"
-          className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer group"
+          className="flex items-center gap-4 hover:opacity-90 transition-opacity cursor-pointer group"
         >
-          <div className="w-12 h-12 relative">
-            <img src="/logo.png" alt="WhoPays" className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(59,130,246,0.3)] transition-transform group-hover:scale-110" />
+          <div className="w-12 h-12 sm:w-14 sm:h-14 relative">
+            <img src="/logo.png" alt="WhoPays" className="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.4)] transition-transform duration-500 group-hover:scale-110 group-hover:rotate-[-5deg]" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-white">
             Who
             <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-400 to-purple-400">
               Pays
@@ -619,17 +622,38 @@ export default function HomeContent() {
           )}
         </div>
       </header>
+
+      {/* ── Sleek Navigation Tabs (Only shown when Lobby is active) ── */}
+      {activeSessionId !== null && (
+        <div className="w-[90%] max-w-[320px] sm:max-w-md mx-auto mb-10 bg-white/5 p-1.5 rounded-[2rem] flex border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl z-10 relative">
+          <button 
+            onClick={() => setActiveTab('lobby')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 sm:py-3.5 rounded-[1.5rem] font-black text-[11px] sm:text-sm uppercase tracking-widest transition-all duration-300 ${activeTab === 'lobby' ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)] scale-[1.02]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+          >
+            <LayoutDashboard className="w-4 h-4" /> Lobby & Wheel
+          </button>
+          <button 
+            onClick={() => setActiveTab('agent')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 sm:py-3.5 rounded-[1.5rem] font-black text-[11px] sm:text-sm uppercase tracking-widest transition-all duration-300 ${activeTab === 'agent' ? 'bg-purple-600 text-white shadow-[0_0_20px_rgba(147,51,234,0.4)] scale-[1.02]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+          >
+            <Bot className="w-4 h-4" /> PayBot AI
+          </button>
+        </div>
+      )}
+
       <div className={`w-full transition-all duration-500 flex flex-col items-center ${activeSessionId === null ? 'max-w-md' : 'max-w-5xl'}`}>
-        <div className={`w-full ${activeSessionId === null ? '' : 'grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12'}`}>
+        
+        {/* LOBBY TAB CONTENT */}
+        <div className={`w-full ${activeSessionId === null ? '' : (activeTab === 'lobby' ? 'grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 animate-in fade-in zoom-in-95 duration-500' : 'hidden')}`}>
           {/* On Mobile, we reverse order to show Spinner at top if active */}
-          <div className={`${activeSessionId !== null ? 'order-2 md:order-1' : ''} space-y-6 w-full`}>
+          <div className={`${activeSessionId !== null ? 'order-2 lg:order-1' : ''} space-y-6 w-full`}>
             {/* Left Column Content */}
           {/* Create Lobby Card (Hidden if already in a session) */}
           {activeSessionId === null ? (
-            <div className="glass-card p-6 sm:p-8 rounded-[2rem]">
-              <h2 className="text-xl font-black mb-6 flex items-center gap-3 text-white uppercase tracking-tight">
-                <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
-                  <CreditCard className="w-4 h-4 text-green-400" />
+            <div className="glass-card p-8 sm:p-10 rounded-[2.5rem] sm:rounded-[3rem] w-full max-w-lg mx-auto shadow-2xl transition-all duration-300 hover:shadow-[0_0_50px_rgba(139,92,246,0.15)]">
+              <h2 className="text-2xl font-black mb-8 flex items-center gap-4 text-white uppercase tracking-tight">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-green-400/20 to-blue-500/20 flex items-center justify-center border border-white/5 shadow-inner">
+                  <CreditCard className="w-5 h-5 text-green-400" />
                 </div>
                 New Lobby
               </h2>
@@ -718,8 +742,8 @@ export default function HomeContent() {
             </div>
           ) : (
             /* Lobby Active Card */
-            <div className="glass-card p-6 sm:p-8 rounded-[2rem] border-blue-500/20 shadow-[0_0_40px_rgba(59,130,246,0.1)]">
-              <div className="flex justify-between items-center mb-8">
+            <div className="glass-card p-6 sm:p-10 rounded-[2.5rem] sm:rounded-[3rem] border-blue-500/30 shadow-[0_0_60px_rgba(59,130,246,0.15)] transition-all duration-300">
+              <div className="flex justify-between items-center mb-10">
                 {isEditingLobbyName && isHost ? (
                   <input
                     type="text"
@@ -899,10 +923,11 @@ export default function HomeContent() {
               </button>
             </div>
           )}
+          </div> {/* <--- THIS CLOSES THE LEFT COLUMN CONTENT */}
           
           {/* Right Column: The Spinner (Hidden until Lobby is created, Moves to TOP on mobile) */}
           {activeSessionId !== null && (
-            <section className="order-1 md:order-2 flex flex-col items-center justify-center space-y-6 sm:space-y-8 relative py-4">
+            <section className="order-1 lg:order-2 flex flex-col items-center justify-center space-y-6 sm:space-y-8 relative py-4">
               {/* Reaction Overlay */}
               <div className="absolute inset-0 pointer-events-none z-50">
                 {recentReactions.map((r) => (
@@ -1080,22 +1105,21 @@ export default function HomeContent() {
               )}
             </section>
           )}
-        </div>
-      </div>
-      </div>
+        </div> {/* <--- THIS CLOSES THE GRID CONTAINER (LOBBY TAB CONTENT) */}
 
-      {/* ── PayBot AI Agent Panel (ERC-8004) ─────────────────────────────── */}
-      {activeSessionId !== null && (
-        <div className="w-full max-w-5xl mt-6 space-y-4">
-          <SelfVerifyBadge verified={false} compact={false} />
-          <AgentPanel
-            participants={participantsList}
-            sessionId={activeSessionId}
-            amount={amount}
-            playerNamesMap={playerNamesMap}
-          />
-        </div>
-      )}
+        {/* AGENT TAB CONTENT */}
+        {activeSessionId !== null && (
+          <div className={`w-full max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-500 ${activeTab === 'agent' ? 'block' : 'hidden'}`}>
+            <SelfVerifyBadge verified={false} compact={false} />
+            <AgentPanel
+              participants={participantsList}
+              sessionId={activeSessionId}
+              amount={amount}
+              playerNamesMap={playerNamesMap}
+            />
+          </div>
+        )}
+      </div> {/* <--- THIS CLOSES THE MAIN CONTENT WRAPPER */}
     </main>
   );
 }
